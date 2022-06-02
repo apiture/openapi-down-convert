@@ -2,22 +2,22 @@ import * as v8 from 'v8';
 
 interface OpenAPI3 {
   openapi: string;
-  info: Object;
-  paths: Object;
-  components: Object;
-  tags: Object;
+  info: object;
+  paths: object;
+  components: object;
+  tags: object;
 }
 
 export class Converter {
   private openapi30: OpenAPI3;
-  private verbose: boolean = false;
+  private verbose = false;
 
-  constructor(openapiDocument: Object, verbose: boolean = false) {
+  constructor(openapiDocument: object, verbose = false) {
     this.openapi30 = Converter.deepClone(openapiDocument) as OpenAPI3;
     this.verbose = verbose;
   }
 
-  public convert(): Object {
+  public convert(): object {
     if (this.verbose) {
       console.warn('Converting from OpenAPI 3.1 to 3.0');
     }
@@ -25,7 +25,7 @@ export class Converter {
     return this.openapi30;
   }
 
-  public static deepClone = (obj: Object): Object => {
+  public static deepClone = (obj: object): object => {
     return v8.deserialize(v8.serialize(obj)); // kinda simple way to clone, but it works...
   };
 }

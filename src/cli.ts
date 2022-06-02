@@ -26,13 +26,13 @@ async function main(args: string[] = process.argv) {
   try {
     const resolved = converter.convert();
     if (outputFileName) {
-      let format = outputFileName.endsWith('json') ? 'json' : 'yaml';
+      const format = outputFileName.endsWith('json') ? 'json' : 'yaml';
       const text = format === 'yaml' ? yaml.dump(resolved) : JSON.stringify(resolved, null, 2);
       const outDir = path.dirname(outputFileName);
       mkdirs(outDir);
       fs.writeFileSync(outputFileName, text, 'utf8');
     } else {
-      let format = sourceFileName.endsWith('json') ? 'json' : 'yaml';
+      const format = sourceFileName.endsWith('json') ? 'json' : 'yaml';
       const text = format === 'yaml' ? yaml.dump(resolved) : JSON.stringify(resolved, null, 2);
       console.log(text);
     }
