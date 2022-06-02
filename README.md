@@ -1,15 +1,14 @@
-# OpenAPI Down Converter
+# OpenAPI Down Convert
 
 Tool to convert from OpenAPI 3.1 to OpenAPI 3.0.
-[OAS 3.1.0
-Release](https://github.com/OAI/OpenAPI-Specification/releases/tag/3.1.0)
-describes the changes from 3.0 to 3.1.
 
-See
+* [OAS 3.1.0 Release](https://github.com/OAI/OpenAPI-Specification/releases/tag/3.1.0)
+describes the changes from 3.0 to 3.1.
+* See
 [Migrating from OpenAPI 3.0 to 3.1.0](https://www.openapis.org/blog/2021/02/16/migrating-from-openapi-3-0-to-3-1-0)
 for going in the other direction. This tool helps "undo" those transformations.
 
-This is not a fully robust tool. It does the minimal work necessary for Apiture APIs.
+**Warning**: This is not a fully robust tool. It does the minimal work necessary for Apiture APIs.
 
 Change `openapi: 3.1.x` to `openapi: 3.0.2`
 
@@ -68,7 +67,7 @@ mySchema:
     - $ref: uri
 ```
 
-This also applies to the schema in parameters or in `requestBody` objects
+This also applies to the schema used in parameters or in `requestBody` objects
 and in responses.
 
 Other (non-JSON Schema) OpenAPI 3.1 `$ref` objects can have `description` and `summary`. `$ref`

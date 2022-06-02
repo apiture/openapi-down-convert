@@ -20,7 +20,7 @@ describe('resolver test suite', () => {
     expect(converted.openapi).toEqual('3.0.3');
     done();
   });
-  xit('Convert changes $ref object to allOf', (done) => {
+  test('Convert changes $ref object to allOf', (done) => {
     // const sourceFileName = path.join(__dirname, 'data/root.yaml'); // __dirname is the test dir
     const input = {
       components: {
@@ -40,9 +40,9 @@ describe('resolver test suite', () => {
     const converted: any = converter.convert();
     const b = converted.components.schemas.b;
     expect(b.$ref).toBeUndefined();
-    const allOf = b.allOf();
+    const allOf = b.allOf;
     expect(allOf).toBeDefined();
-    expect(allOf[0]).toEqual('#/components/schemas/a');
+    expect(allOf[0].$ref).toEqual('#/components/schemas/a');
     done();
   });
 
