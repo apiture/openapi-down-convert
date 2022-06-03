@@ -62,7 +62,38 @@ export class Converter {
     this.openapi30.openapi = '3.0.3';
     this.convertSchemaRef();
     this.simplifyNonSchemaRef();
+    this.convertSecuritySchemes();
     return this.openapi30;
+  }
+  /**
+   * OpenAPI 3.1 defines a new `openIdConnect` security scheme.
+   * Down-convert the scheme to `oauth2` / authorization code flow.
+   * Collect all the scopes used in any security requirements within
+   * operations and add them to the scheme. Also define the
+   * URLs to the `authorizationUrl` and `tokenUrl` of `oauth2`.
+   */
+  convertSecuritySchemes() {
+    const schemes = this.openapi30?.components?.['securitySchemes'] || {};
+    for (const schemeName in schemes) {
+      const scheme = schemes[schemeName];
+      const type = scheme.type;
+      if (type === 'openIdConnect') {
+        scheme.type = 'oauth2';
+        const openIdConnectUrl = scheme.openIdConnectUrl;
+        scheme.description = `OAuth2 Authorization Code Flow. The client may
+          GET the OpenID Connect configuration JSON from \`${openIdConnectUrl}\`
+          to get the correct \`authorizationUrl\` and \`tokenUrl\`.`;
+        delete scheme.openIdConnectUrl;
+        const scopes = this.oauth2Scopes(schemeName);
+        scheme.flows = {
+          authorizationCode: {
+            authorizationUrl: 'https://www.example.com/oath2/authorize',
+            tokenUrl: 'https://www.example.com/oath2/token',
+            scopes: scopes,
+          },
+        };
+      }
+    }
   }
 
   /**
@@ -72,6 +103,29 @@ export class Converter {
    */
   simplifyNonSchemaRef() {
     visitRefObjects(this.openapi30, this.jsonReferenceVisitor);
+  }
+
+  oauth2Scopes(schemeName: string): object {
+    const scopes = {};
+    const paths = this.openapi30?.paths;
+    for (const path in paths) {
+      for (const op in paths[path]) {
+        if (op === 'parameters') {
+          continue;
+        }
+        const operation = paths[path][op];
+        const sec = operation?.security as object[];
+        sec.forEach((s) => {
+          const requirement = s?.[schemeName] as string[];
+          if (requirement) {
+            requirement.forEach((scope) => {
+              scopes[scope] = scope;
+            });
+          }
+        });
+      }
+    }
+    return scopes;
   }
 
   /**
