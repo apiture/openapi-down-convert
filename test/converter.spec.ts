@@ -45,6 +45,32 @@ describe('resolver test suite', () => {
     expect(allOf[0].$ref).toEqual('#/components/schemas/a');
     done();
   });
+  test('Convert changes $ref object to JSON Reference', (done) => {
+    // const sourceFileName = path.join(__dirname, 'data/root.yaml'); // __dirname is the test dir
+    const input = {
+      paths: {
+        '/things/{thingId}': {
+          get: {
+            parameters: [{ description: 'a thing', $ref: '#/components/parameters/thingIdPathParam' }],
+          },
+        },
+        components: {
+          parameters: {
+            thingIdPathParam: {
+              in: 'path',
+              type: 'string',
+            },
+          },
+        },
+      },
+    };
+    const converter = new Converter(input);
+    const converted: any = converter.convert();
+    const getParam0 = converted.paths['/things/{thingId}'].get.parameters[0];
+    expect(getParam0.$ref).toBeDefined();
+    expect(getParam0.description).toBeUndefined();
+    done();
+  });
 
   xit('Disabled test stub, so we can leave xit in the imports and use when needed', (done) => {
     done();

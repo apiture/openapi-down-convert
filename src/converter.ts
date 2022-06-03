@@ -24,8 +24,12 @@ export class Converter {
       console.warn(...message);
     }
   }
+  private warn(...message) {
+    message[0] = `Warning: ${message[0]}`;
+    console.warn(...message);
+  }
 
-  refVisitor: RefVisitor = (node: RefObject): JsonNode => {
+  jsonSchemaRefVisitor: RefVisitor = (node: RefObject): JsonNode => {
     if (Object.keys(node).length === 1) {
       return node;
     } else {
@@ -35,11 +39,39 @@ export class Converter {
     }
   };
 
+  jsonReferenceVisitor: RefVisitor = (node: RefObject): JsonNode => {
+    if (Object.keys(node).length === 1) {
+      return node;
+    } else {
+      this.warn(`Down convert reference object to JSON Reference:\n${JSON.stringify(node, null, 3)}`);
+      for (const key in node) {
+        if (key !== '$ref') {
+          delete node[key];
+        }
+      }
+      return node;
+    }
+  };
+
+  /**
+   * Convert the OpenAPI document to 3.0
+   * @returns the converted document. The input is not modified.
+   */
   public convert(): object {
     this.log('Converting from OpenAPI 3.1 to 3.0');
     this.openapi30.openapi = '3.0.3';
     this.convertSchemaRef();
+    this.simplifyNonSchemaRef();
     return this.openapi30;
+  }
+
+  /**
+   * Find remaining OpenAPI 3.0 [Reference Objects](https://github.com/OAI/OpenAPI-Specification/blob/main/versions/3.1.0.md#referenceObject)
+   * and down convert them to [JSON Reference](https://tools.ietf.org/html/draft-pbryan-zyp-json-ref-03) objects
+   * with _only_ a `$ref` property.
+   */
+  simplifyNonSchemaRef() {
+    visitRefObjects(this.openapi30, this.jsonReferenceVisitor);
   }
 
   /**
@@ -49,7 +81,7 @@ export class Converter {
    * or in sub-objects)
    */
   private simplifyRefObjectsInSchemas(object: object) {
-    visitRefObjects(object, this.refVisitor);
+    visitRefObjects(object, this.jsonSchemaRefVisitor);
   }
 
   convertSchemaRef() {
