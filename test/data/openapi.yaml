@@ -1,0 +1,979 @@
+openapi: 3.0.3
+info:
+  title: Transactions
+  description: ...
+  version: 0.1.2
+  contact:
+    name: Apiture
+    url: https://developer.apiture.com/help/support/
+    email: api@apiture.com
+  termsOfService: https://developer.apiture.com/docs/Apiture-Open-API-License-Agreement.pdf
+  license:
+    name: Apiture API License
+    url: https://developer.apiture.com/docs/Apiture-Open-API-License-Agreement.pdf
+x-apiture-namespace: bankingTransactions
+servers:
+  - url: /banking
+tags:
+  - name: Transactions
+    description: Banking Account Transactions
+paths:
+  /accounts/{accountId}/transactions:
+    parameters:
+      - $ref: '#/components/parameters/accountIdPathParam'
+    get:
+      summary: Return a collection of transactions
+      description: ...
+      operationId: listTransactions
+      tags:
+        - Transactions
+      parameters:
+        - $ref: '#/components/parameters/startQueryParam'
+        - $ref: '#/components/parameters/limitQueryParam'
+        - name: postedOn
+          description: >-
+            Return only transactions whose `postedOn` date is in this date
+            range. Dates ranges use dates expressed in `YYYY-MM-DD` [RFC
+            3339](https://tools.ietf.org/html/rfc3339) `date` format. Example
+            date ranges: <ul> <li> `2022-05-19`</li> match only transactions
+            made on May 19, 2022. <li> `[2022-05-01,2022-05-31]` in between May
+            1 and 31, 2022, inclusive</li> <li> `(2022-05-01,2022-06-01)` in
+            May, 2022 (on or after May 1, but before June 1)</li> <li>
+            `[2022-05-09,]` on or after May 9, 2022</li> <li> `(2022-05-09,)`
+            after May 9, 2022</li> <li> `[,2022-05-09]` on or before May 9,
+            2022</li> <li> `(,2022-05-09)` before May 9, 2022</li> </ul>
+          in: query
+          schema:
+            $ref: '#/components/schemas/dateRange'
+        - name: createdOn
+          description: >-
+            Return only transactions whose `createdOn` date is in this date
+            range. Example date ranges are the same format as the `postedOn`
+            query parameter.
+          in: query
+          schema:
+            $ref: '#/components/schemas/dateRange'
+        - name: categories
+          description: >-
+            Filter transactions to only those whose `category` is in this
+            pipe-separated list. Categories are set by the transaction cleansing
+            service and can include names such as `"Shopping"`, `"Deposit"`,
+            `"Bill"`, `"Transfer"`, or `"Other"`.
+          in: query
+          style: pipeDelimited
+          schema:
+            type: array
+            minItems: 1
+            maxItems: 16
+            examples:
+              - Shopping
+              - Bill|Transfer
+            items:
+              $ref: '#/components/schemas/transactionCategoryLabel'
+        - name: type
+          description: >-
+            Filter transaction only those whose `type` is in this pipe-separated
+            list.
+          in: query
+          style: pipeDelimited
+          schema:
+            type: array
+            minItems: 1
+            maxItems: 4
+            uniqueItems: true
+            items:
+              $ref: '#/components/schemas/transactionType'
+        - name: amount
+          description: >-
+            Return only transactions whose `amount` is in this numeric range.
+            This compares only the absolute value of the transaction. That is,
+            the value `[1000.00,1100.00)` will match either a debit of
+            `-1070.25` or a credit of `1021.90`.<br> Some examples of specifying
+            an amount range: <ul> <li>`1200.50` match the the dollar amount
+            1,200.50 exactly</li> <li>`[1000.00,1200.00)` matches items where
+            `1000.00 <= amount < 1200.00`</li> <li>`[1000.00,1199.99]` matches
+            items where `1000.00 <= amount <= 1199.99`</li>
+            <li>`(999.99,1200.00]` matches items where `999.99 < amount <=
+            1200.00`</li> <li>`[1200.50,]` matches items where `amount >=
+            1200.50`</li> <li>`(1200.50,)` matches items where `amount >
+            1200.50`</li> <li>`[,1200.50]` matches items where `amount <=
+            1200.50`</li> <li>`(,1200.50)` matches items where `amount <
+            1200.50`</li> </ul>
+          in: query
+          schema:
+            $ref: '#/components/schemas/amountRange'
+        - name: checkNumber
+          description: >-
+            Return only transactions whose `check.number` is in this integer
+            range. Examples: <ul> <li>`1200` match the integer 1,200
+            exactly</li> <li>`[1000,1200)` matches items where `1000 <= number <
+            1200`</li> <li>`[1000,1199]` matches items where `1000 <= number <=
+            1199`</li> <li>`(999,1200]` matches items where `999 < number <=
+            1200`</li> <li>`[1200,]` matches items where `number >= 1200`</li>
+            <li>`(1200,)` matches items where `number > 1200`</li> <li>`[,1200]`
+            matches items where `number <= 1200`</li> <li>`(,1200)` matches
+            items where `number < 1200`</li> </ul>
+          in: query
+          schema:
+            $ref: '#/components/schemas/checkNumberRange'
+      responses:
+        '200':
+          description: OK.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/transactions'
+        '400':
+          $ref: '#/components/responses/400'
+        '401':
+          $ref: '#/components/responses/401'
+        '403':
+          $ref: '#/components/responses/403'
+        '422':
+          description: >-
+            Unprocessable Entity. The request body and/or query parameters were
+            well formed but otherwise invalid.
+          content:
+            application/problem+json:
+              schema:
+                $ref: '#/components/schemas/problemResponse'
+            application/json:
+              schema:
+                $ref: '#/components/schemas/problemResponse'
+      security:
+        - accessToken:
+            - banking/read
+      x-apiture-permission: listTransactions
+components:
+  securitySchemes:
+    apiKey:
+      type: apiKey
+      name: API-Key
+      in: header
+      description: >-
+        API Key based client identification. See details at [Secure
+        Access](https://developer.apiture.com/docs/secure-access).
+    accessToken:
+      type: openIdConnect
+      description: >-
+        OpenId Connect (OIDC) authentication/authorization. The client uses the
+        `authorization_endpoint` and `token_endpoint` to obtain an access token.
+        Those endpoints are in the JSON data at OIDC discovery URL
+        `openIdConnect_url` that is part of the Auth API `GET /auth` response,
+        so the actual URL may vary with each financial institution. See details
+        at [Secure Access](https://developer.apiture.com/docs/secure-access).
+      openIdConnectUrl: https://auth.apiture.com/openidConnectDiscovery
+  parameters:
+    transactionIdPathParam:
+      name: transactionId
+      description: The unique identifier of this transaction. This is an opaque string.
+      in: path
+      schema:
+        type: string
+      required: true
+    accountIdPathParam:
+      name: accountId
+      description: >-
+        The unique identifier of this account resource. This is an opaque
+        string.
+      in: path
+      required: true
+      schema:
+        $ref: '#/components/schemas/resourceId'
+    startQueryParam:
+      name: start
+      in: query
+      description: >-
+        The location of the next item in the collection. This is an opaque
+        cursor supplied by the API service. Omit this to start at the beginning
+        of the collection. The client does not define this value; the API
+        services automatically pass the `?start=` parameter on the
+        `nextPage_url`.
+      schema:
+        type: string
+        maxLength: 256
+        default: ''
+    limitQueryParam:
+      name: limit
+      in: query
+      description: The maximum number of items to return in this page response.
+      schema:
+        type: integer
+        format: int32
+        minimum: 0
+        maximum: 1000
+        default: 100
+  responses:
+    '400':
+      description: >-
+        Bad Request. The request body, request headers, and/or query parameters
+        are not well-formed.
+      content:
+        application/problem+json:
+          schema:
+            $ref: '#/components/schemas/problemResponse'
+          example:
+            type: https://production.api.apiture.com/errors/badRequest/v1.0.0
+            title: Bad Request
+            status: 400
+            occurredAt: '2022-04-25T12:42:21.375Z'
+            detail: Input did not parse as JSON
+            instance: https://api.apiture.com/banking/transfers/bb709151-575041fcd617
+        application/json:
+          schema:
+            $ref: '#/components/schemas/problemResponse'
+          example:
+            type: https://production.api.apiture.com/errors/badRequest/v1.0.0
+            title: Bad Request
+            status: 400
+            occurredAt: '2022-04-25T12:42:21.375Z'
+            detail: Input did not parse as JSON
+            instance: https://api.apiture.com/banking/transfers/bb709151-575041fcd617
+    '401':
+      description: Unauthorized. The operation require authentication but none was given.
+      content:
+        application/problem+json:
+          schema:
+            $ref: '#/components/schemas/problemResponse'
+          example:
+            type: https://production.api.apiture.com/errors/unauthorized/v1.0.0
+            title: Unauthorized
+            status: 400
+            occurredAt: '2022-04-25T12:42:21.375Z'
+            detail: The request lacks valid authentication credentials
+            instance: https://api.apiture.com/banking/transfers/bb709151-575041fcd617
+        application/json:
+          schema:
+            $ref: '#/components/schemas/problemResponse'
+          example:
+            type: https://production.api.apiture.com/errors/unauthorized/v1.0.0
+            title: Unauthorized
+            status: 401
+            occurredAt: '2022-04-25T12:42:21.375Z'
+            detail: The request lacks valid authentication credentials
+            instance: https://api.apiture.com/banking/transfers/bb709151-575041fcd617
+    '403':
+      description: >-
+        Forbidden. The authenticated caller is not authorized to perform the
+        requested operation.
+      content:
+        application/problem+json:
+          schema:
+            $ref: '#/components/schemas/problemResponse'
+          example:
+            type: https://production.api.apiture.com/errors/forbidden/v1.0.0
+            title: Forbidden
+            status: 403
+            occurredAt: '2022-04-25T12:42:21.375Z'
+            detail: >-
+              The request has valid authentication, but the authenticated agent
+              is forbidden from accessing this resource or operation
+            instance: https://api.apiture.com/banking/transfers/bb709151-575041fcd617
+        application/json:
+          schema:
+            $ref: '#/components/schemas/problemResponse'
+          example:
+            type: https://production.api.apiture.com/errors/forbidden/v1.0.0
+            title: Forbidden
+            status: 403
+            occurredAt: '2022-04-25T12:42:21.375Z'
+            detail: >-
+              The request has valid authentication, but the authenticated agent
+              is forbidden from accessing this resource or operation
+            instance: https://api.apiture.com/banking/transfers/bb709151-575041fcd617
+      headers:
+        WWW-Authenticate:
+          description: >-
+            Indicates the additional [authentication scheme(s) and
+            parameters](https://datatracker.ietf.org/doc/html/rfc7235#section-4.1)
+            applicable to the target resource/operation.
+          schema:
+            type: string
+    404Transaction:
+      description: >-
+        Not Found. There is no such transaction resource at the specified
+        `{transactionId}`.
+
+
+        This error response may have one of the following `type` values:
+
+        * [`noSuchAccount`](#err-noSuchAccount)
+
+        * [`noSuchTransaction`](#err-noSuchTransaction)
+      x-apiture-errors:
+        - noSuchAccount
+        - noSuchTransaction
+      content:
+        application/problem+json:
+          schema:
+            $ref: '#/components/schemas/problemResponse'
+          example:
+            type: https://production.api.apiture.com/errors/noSuchTransaction/v1.0.0
+            title: Not Found
+            status: 404
+            occurredAt: '2022-04-25T12:42:21.375Z'
+            detail: No such transaction exists for the given `{transactionId}`
+            instance: https://api.apiture.com/banking/transfers/bb709151-575041fcd617
+        application/json:
+          schema:
+            $ref: '#/components/schemas/problemResponse'
+          example:
+            type: https://production.api.apiture.com/errors/noSuchTransaction/v1.0.0
+            title: Not Found
+            status: 404
+            occurredAt: '2022-04-25T12:42:21.375Z'
+            detail: No such transaction exists for the given `{transactionId}`
+            instance: https://api.apiture.com/banking/transfers/bb709151-575041fcd617
+  schemas:
+    checkNumberRange:
+      title: Check Number Range (v1.0.0)
+      description: A numeric range for a checking account check number.
+      allOf:
+        - $ref: '#/components/schemas/positiveIntegerRange'
+      x-apiture-version: 1.0.0
+    transactionFields:
+      title: Transaction Fields (v1.0.0)
+      description: >-
+        Common fields of the transaction resource used to build other model
+        schemas.
+      type: object
+      x-apiture-fragment: true
+      properties:
+        id:
+          description: This transaction's unique identifier.
+          $ref: '#/components/schemas/readOnlyResourceId'
+        type:
+          description: The transaction type.
+          $ref: '#/components/schemas/transactionType'
+        createdOn:
+          description: >-
+            The date when this resource was created, in `YYYY-MM-DD` [RFC
+            3339](https://tools.ietf.org/html/rfc3339) `date` format. This is
+            derived and immutable.
+          type: string
+          format: date
+          readOnly: true
+          example: '2022-05-18'
+        postedOn:
+          description: >-
+            The date when this resource was posted (cleared and applied to the
+            account balance), in [RFC 3339](https://tools.ietf.org/html/rfc3339)
+            date `YYYY-MM-DD` format, UTC. This is derived and immutable.
+          type: string
+          format: date
+          readOnly: true
+          example: '2022-05-18'
+        amount:
+          description: >-
+            The transaction amount in dollars. This value is negative if the
+            transaction is a debit and positive if it is a credit.
+          $ref: '#/components/schemas/creditOrDebitValue'
+        posted:
+          description: >-
+            If `true`, the transaction has been posted (cleared) and applied to
+            the account. If `false`, the transaction is still pending and may be
+            canceled.
+          type: boolean
+        balance:
+          description: The account's running current balance as of this transaction.
+          $ref: '#/components/schemas/creditOrDebitValue'
+        memo:
+          description: The user-settable transaction memo.
+          type: string
+          maxLength: 80
+          x-apiture-todo: maxLength?
+        description:
+          description: >-
+            The transaction description assigned by the transaction cleansing
+            service.
+          type: string
+          maxLength: 80
+          x-apiture-todo: maxLength?
+        category:
+          $ref: '#/components/schemas/transactionCategorization'
+        merchant:
+          $ref: '#/components/schemas/transactionMerchant'
+        check:
+          $ref: '#/components/schemas/transactionCheck'
+      required:
+        - id
+        - type
+        - createdOn
+        - amount
+        - posted
+      example:
+        id: 88f5bf17-ecc4
+        type: check
+        createdOn: '2022-05-18'
+        postedOn: '2022-05-19'
+        memo: Paid electric bill
+        merchant:
+          name: B&T'S Excellent Electric Co
+          website_url: https://BillTedsExcellentElectricCompany.example.com/
+          logo_url: >-
+            https://BillTedsExcellentElectricCompany.example.com/img/logos/medium.png
+        amount: '1276.21'
+        posted: true
+        balance: '8509.38'
+        category:
+          label: Utilities
+          id: '127'
+        check:
+          number: 8412
+          imageFront_url: >-
+            /accounts/1d16e438-18e0/transactions/88f5bf17-ecc4/images/front/content
+          imageBack_url: >-
+            /accounts/1d16e438-18e0/transactions/88f5bf17-ecc4/images/back/content
+      x-apiture-version: 1.0.0
+    transactionMerchant:
+      title: Transaction Merchant (v1.0.0)
+      description: Describes the merchant associated with a transaction.
+      type: object
+      properties:
+        name:
+          description: The merchant\'s name.
+          type: string
+          maxLength: 32
+          x-apiture-todo: maxLength?
+        website_url:
+          description: The merchant's website URL.
+          type: string
+          format: uri-reference
+          maxLength: 400
+        logo_url:
+          description: >-
+            The optional URL of the merchant's logo. This image must be an image
+            resource (SVG, PNG, GIF, JPEG image) that does not require any
+            authentication. The URL may contain query parameters.
+          type: string
+          format: uri-reference
+          maxLength: 400
+      x-apiture-version: 1.0.0
+    transactionCheck:
+      title: Transaction Check (v1.0.0)
+      description: Describes a check associated with a transaction for a checking account.
+      type: object
+      properties:
+        number:
+          description: The check number.
+          type: integer
+          minimum: 1
+        imageFront_url:
+          description: The URL for downloading the image of the front of the check.
+          type: string
+          format: uri-reference
+          maxLength: 400
+        imageBack_url:
+          description: The URL for downloading the image of the front of the check.
+          type: string
+          format: uri-reference
+          maxLength: 400
+      x-apiture-version: 1.0.0
+    transactionCategorization:
+      title: Transaction Categorization (v1.0.0)
+      description: The transaction categorization.
+      type: object
+      properties:
+        label:
+          $ref: '#/components/schemas/transactionCategoryLabel'
+        id:
+          description: The unique ID of this transaction's category.
+          readOnly: true
+          pattern: ^[-_:.~$a-zA-Z0-9]+$
+          minLength: 2
+          maxLength: 32
+      x-apiture-version: 1.0.0
+    transactionCategoryLabel:
+      title: Transaction Category Label (v1.0.0)
+      description: >-
+        The label of a transaction category, such as `"Shopping"`, `"Deposit"`,
+        `"Bill"`, `"Transfer"`, or `"Other"`.
+      type: string
+      minLength: 1
+      maxLength: 16
+      x-apiture-version: 1.0.0
+    transactionType:
+      title: Transaction Type (v1.0.0)
+      description: >+
+        Distinguishes between balance transactions, debit, credit, or check
+        transactions.
+
+
+        <strong><code>transactionType</code></strong> strings may have one of
+        the following
+
+        [enumerated
+        values](https://developer.apiture.com/docs/concepts/label-groups#enumerations):
+
+
+        <table>
+
+        <tr>
+          <th>Value</th><th>Description</th>
+        </tr>
+
+
+        <tr>
+            <td><strong><code>balance</code></strong></td><td>Balance: A transaction that establishes the account balance.</td>
+            </tr>
+        <tr>
+            <td><strong><code>debit</code></strong></td><td>Debit: A non-check debit against the account.</td>
+            </tr>
+        <tr>
+            <td><strong><code>credit</code></strong></td><td>Credit: A credit transaction.</td>
+            </tr>
+        <tr>
+            <td><strong><code>check</code></strong></td><td>Check: A check drawn from a checking account</td>
+            </tr>
+        </table>
+
+      type: string
+      x-apiture-enum: transactionType
+      enum:
+        - balance
+        - debit
+        - credit
+        - check
+      x-apiture-version: 1.0.0
+    transactionItem:
+      title: Transaction Item (v1.0.0)
+      description: >-
+        Summary representation of a transaction resource in transactions
+        collections. To fetch the full representation of this transaction, use
+        the [`getTransaction`](#op-getTransaction) operation, passing this
+        item's `id` field as the `transactionId` path parameter.
+      allOf:
+        - $ref: '#/components/schemas/abstractBody'
+        - $ref: '#/components/schemas/transactionFields'
+        - type: object
+          properties:
+            id:
+              description: >-
+                The unique identifier for this transaction resource. This is an
+                immutable opaque string.
+              allOf:
+                - $ref: '#/components/schemas/readOnlyResourceId'
+      example:
+        id: 88f5bf17-ecc4
+        type: check
+        createdOn: '2022-05-18'
+        postedOn: '2022-05-19'
+        memo: Paid electric bill
+        merchant:
+          name: B&T's Excellent Electric Co.
+          website_url: https://BillTedsExcellentElectricCompany.example.com/
+          logo_url: >-
+            https://BillTedsExcellentElectricCompany.example.com/img/logos/medium.png
+        amount: '1276.21'
+        posted: true
+        balance: '8509.38'
+        category:
+          label: Utilities
+          id: '127'
+        check:
+          number: '8412'
+          imageFront_url: >-
+            /accounts/1d16e438-18e0/transactions/88f5bf17-ecc4/images/front/content
+          imageBack_url: >-
+            /accounts/1d16e438-18e0/transactions/88f5bf17-ecc4/images/back/content
+      x-apiture-version: 1.0.0
+    transaction:
+      title: Transaction (v1.0.0)
+      description: Representation of transaction resources.
+      allOf:
+        - $ref: '#/components/schemas/transactionItem'
+        - type: object
+          properties: {}
+      example:
+        id: 88f5bf17-ecc4
+        type: check
+        createdOn: '2022-05-18'
+        postedOn: '2022-05-19'
+        memo: Paid electric bill
+        merchant:
+          name: B&T's Excellent Electric Co.
+          website_url: https://BillTedsExcellentElectricCompany.example.com/
+          logo_url: >-
+            https://BillTedsExcellentElectricCompany.example.com/img/logos/medium.png
+        amount: '1276.21'
+        posted: true
+        balance: '8509.38'
+        category:
+          label: Utilities
+          id: '127'
+        check:
+          number: '8412'
+          imageFront_url: >-
+            /accounts/1d16e438-18e0/transactions/88f5bf17-ecc4/images/front/content
+          imageBack_url: >-
+            /accounts/1d16e438-18e0/transactions/88f5bf17-ecc4/images/back/content
+      x-apiture-version: 1.0.0
+    transactions:
+      title: Transaction Collection (v1.0.0)
+      description: >-
+        Collection of transactions. The items in the collection are ordered in
+        the `items` array; the `name` is `transactions`. The response object may
+        contain the `nextPage_url` pagination link.
+      allOf:
+        - $ref: '#/components/schemas/abstractPagedBody'
+        - type: object
+          properties:
+            items:
+              description: An array containing a page of transaction items.
+              type: array
+              items:
+                $ref: '#/components/schemas/transactionItem'
+      example:
+        start: d1b48af913464aa49fcb07065dcc0616
+        limit: 10
+        nextPage_url: >-
+          https://api.apiture.com/transactions/accounts/{accountId}/transactions?start=6117a4dcefb841cab7316cef1ac8b58c&limit=10
+        items:
+          - id: d62c0701-0d74
+            type: balance
+            createdOn: '2022-05-18'
+            postedOn: '2022-05-19'
+            amount: '0.00'
+            posted: true
+            balance: '8509.38'
+          - id: 88f5bf17-ecc4
+            type: check
+            createdOn: '2022-05-18'
+            postedOn: '2022-05-19'
+            memo: Paid electric bill
+            merchant:
+              name: B&T's Excellent Electric Co.
+              website_url: https://BillTedsExcellentElectricCompany.example.com/
+              logo_url: >-
+                https://BillTedsExcellentElectricCompany.example.com/img/logos/medium.png
+            amount: '1276.21'
+            posted: true
+            balance: '8509.38'
+            category:
+              label: Utilities
+              id: '127'
+            check:
+              number: '8412'
+              imageFront_url: >-
+                /accounts/1d16e438-18e0/transactions/88f5bf17-ecc4/images/front/content
+              imageBack_url: >-
+                /accounts/1d16e438-18e0/transactions/88f5bf17-ecc4/images/back/content
+      x-apiture-version: 1.0.0
+    dateRange:
+      description: >-
+        A date range, supporting inclusive or exclusive endpoints. Dates ranges
+        use dates expressed in `YYYY-MM-DD` [RFC
+        3339](https://tools.ietf.org/html/rfc3339) `date` format. The value may
+        have the following forms: <ul> <li>`YYYY-MM-DD` match the date exactly;
+        equivalent to matching dates in the range `[YYYY-MM-DD,YYYY-MM-DD]`</li>
+        <li>`[YYYY-MM-DD,YYYY-MM-DD]` between two dates, inclusive of the
+        endpoints</li> <li>`(YYYY-MM-DD,YYYY-MM-DD)` between two dates,
+        exclusive of the endpoints</li> <li>`[YYYY-MM-DD,]` on or after the
+        date</li> <li>`(YYYY-MM-DD,)` after the date</li> <li>`[,YYYY-MM-DD]`
+        before or on the date</li> <li>`(,YYYY-MM-DD)` before the date</li>
+        </ul>
+      type: string
+      pattern: >-
+        ^\d{4}-\d{2}-\d{2}|([[(](\d{4}-\d{2}-\d{2},(\d{4}-\d{2}-\d{2})?|,\d{4}-\d{2}-\d{2})[)\]])$
+      examples:
+        - '2022-05-19'
+        - '[2022-05-01,2022-05-31]'
+        - '[2022-05-01,2022-06-01)'
+        - '[2022-05-19,]'
+        - (2022-05-19,)
+        - '[,2022-05-19]'
+        - (,2022-05-19)
+      x-resolved-from: ../../common/openapi.yaml#/components/schemas/dateRange
+      x-apiture-version: 1.0.0
+      title: ' (v1.0.0)'
+    amountRange:
+      description: >-
+        A monetary amount range, supporting inclusive or exclusive endpoints.
+        The value may have the following forms: <ul> <li>`1200.50` match the the
+        dollar amount 1,200.50 exactly</li> <li>`[1000.00,1200.00)` matches
+        items where `1000.00 <= amount < 1200.00`</li> <li>`[1000.00,1199.99]`
+        matches items where `1000.00 <= amount <= 1199.99`</li>
+        <li>`[999.99,1200.00]` matches items where `999.99 < amount <
+        1200.00`</li> <li>`[1200.50,]` matches items where `amount >=
+        1200.50`</li> <li>`(1200.50,)` matches items where `amount >=
+        1200.50`</li> <li>`[,1200.50]` matches items where `amount <=
+        1200.50`</li> <li>`(,1200.50)` matches items where `amount <
+        1200.50`</li> </ul>
+      type: string
+      pattern: >-
+        ^\d+(\.\d{0,2})?|([[(](\d+(\.\d{0,2})?,(\d+(\.\d{0,2})?)?|,\d+(\.\d{0,2}))
+      examples:
+        - '1200.50'
+        - '[1000.00,1200.00)'
+        - '[1000.00,1199.99]'
+        - '[999.99,1200.00]'
+        - '[1200.50,]'
+        - (1200.50,)
+        - '[,1200.50]'
+        - (,1200.50)
+      x-resolved-from: ../../common/openapi.yaml#/components/schemas/amountRange
+      x-apiture-version: 1.0.0
+      title: ' (v1.0.0)'
+    problemResponse:
+      title: Problem Response (v0.3.0)
+      x-apiture-version: 0.3.0
+      description: >-
+        API problem or error response, as per [RFC 7807
+        application/problem+json](https://tools.ietf.org/html/rfc7807).
+      type: object
+      allOf:
+        - $ref: '#/components/schemas/abstractBody'
+        - $ref: '#/components/schemas/apiProblem'
+      example:
+        type: https://production.api.apiture.com/errors/noSuchAccount/v1.0.0
+        title: Account Not Found
+        status: 422
+        occurredAt: '2022-04-25T12:42:21.375Z'
+        detail: No account exists for the given account reference
+        instance: https://api.apiture.com/banking/transfers/bb709151-575041fcd617
+      x-resolved-from: ../../common/openapi.yaml#/components/schemas/problemResponse
+    resourceId:
+      title: Resource Identifier (v1.0.0)
+      description: >-
+        The unique, opaque system identifier for a resource. This case-sensitive
+        ID is also used as path parameters in URLs or in other properties or
+        parameters that reference a resource by ID rather than URL.
+      type: string
+      pattern: ^[-_:.~$a-zA-Z0-9]+$
+      minLength: 6
+      maxLength: 48
+      x-resolved-from: ../../common/openapi.yaml#/components/schemas/resourceId
+      x-apiture-version: 1.0.0
+    positiveIntegerRange:
+      description: >-
+        A positive integer range, supporting inclusive or exclusive endpoints.
+        The value may have the following forms: <ul> <li>`1200` match the
+        integer 1,200 exactly</li> <li>`[1000,1200)` matches items where `1000
+        <= number < 1200`</li> <li>`[1000,1199]` matches items where`1000 <=
+        number <= 1199`</li> <li>`[999,1200]` matches items where `999 < number
+        < 1200`</li> <li>`[1200,]`  `number >= 1200`</li> <li>`(1200,)` greater
+        than to the value: `number >= 1200`</li> <li>`[,1200]` less than or
+        equal to the value: `number <= 1200`</li> <li>`(,1200)` less than the
+        value: `number < 1200`</li> </ul>
+      type: string
+      pattern: ^\d+|([[(](\d+,(\d+)?|,\d+)[)\]])$
+      examples:
+        - '1200'
+        - '[1000,1200)'
+        - '[1000,1199]'
+        - '[999,1200]'
+        - '[1200,]'
+        - (1200,)
+        - '[,1200]'
+        - (,1200)
+      x-resolved-from: ../../common/openapi.yaml#/components/schemas/positiveIntegerRange
+      x-apiture-version: 1.0.0
+      title: ' (v1.0.0)'
+    readOnlyResourceId:
+      title: Read-only Resource Identifier (v1.0.0)
+      description: >-
+        The unique, opaque system-assigned identifier for a resource. This
+        case-sensitive ID is also used in URLs as path parameters or in other
+        properties or parameters that reference a resource by ID rather than
+        URL. Resource IDs are immutable.
+      readOnly: true
+      allOf:
+        - $ref: '#/components/schemas/resourceId'
+      x-resolved-from: ../../common/openapi.yaml#/components/schemas/readOnlyResourceId
+      x-apiture-version: 1.0.0
+    creditOrDebitValue:
+      title: Credit Or Debit Value (v1.0.0)
+      description: >-
+        The monetary value representing a credit (positive amounts with no
+        prefix or a `+` prefix) or debit (negative amounts with a `-` prefix).
+        The numeric value is  represented as a string so that it can be exact
+        with no loss of precision.<br>The schema `creditOrDebitValue` was added
+        on version `0.4.0` of the API.
+      example: '3456.78'
+      type: string
+      pattern: ^(-|\+)?(0|[1-9][0-9]*)\.[0-9][0-9]$
+      x-apiture-since: 0.4.0
+      x-resolved-from: ../../common/openapi.yaml#/components/schemas/creditOrDebitValue
+      x-apiture-version: 1.0.0
+    abstractBody:
+      title: Abstract Body (v0.2.0)
+      x-apiture-version: 0.2.0
+      description: >-
+        An abstract schema used to define other request and response body model
+        schemas.
+      x-apiture-fragment: true
+      type: object
+      properties: {}
+      x-apiture-future-hypermedia-properties:
+        profile_url:
+          description: >-
+            The URL of a [resource
+            profile](https://developer.apiture.com/docs/concepts/profiles/)
+            which describes the representation.
+          type: string
+          maxLength: 256
+          format: uri
+          readOnly: true
+      example: {}
+      x-resolved-from: ../../common/openapi.yaml#/components/schemas/abstractBody
+    abstractPagedBody:
+      title: Abstract Paged Body (v0.3.0)
+      x-apiture-version: 0.3.0
+      description: >-
+        An abstract schema used to define paginated collections of resources.
+        Collection classes which extend this schema define an array of `items`
+        which represent a page of data.
+      x-apiture-fragment: true
+      type: object
+      allOf:
+        - $ref: '#/components/schemas/abstractBody'
+        - $ref: '#/components/schemas/abstractPagedBodyFields'
+        - type: object
+          properties:
+            start:
+              description: >-
+                The opaque cursor that specifies the starting location of this
+                page of items.
+              type: string
+              maxLength: 256
+      example:
+        start: 1922a8531e8384cfa71b
+        limit: 100
+        nextPage_url: >-
+          https://api.apiture.com/banking/resources?start=8b76b4a97dccad88890e&limit=100
+      x-resolved-from: ../../common/openapi.yaml#/components/schemas/abstractPagedBody
+    apiProblem:
+      x-apiture-version: 1.1.0
+      title: API Problem (v1.1.0)
+      description: >-
+        API problem or error, as per [RFC 7807
+        application/problem+json](https://tools.ietf.org/html/rfc7807).
+      type: object
+      properties:
+        type:
+          type: string
+          format: uri-reference
+          description: >
+            A [URI reference (RFC3986)](https://tools.ietf.org/html/rfc7807)
+            that identifies the problem type. If present, this is the URL of
+            human-readable HTML documentation for the problem type. When this
+            member is not present, its value is assumed to be `"about:blank"`.
+          example: https://production.api.apiture.com/errors/connectionError
+        title:
+          type: string
+          description: >
+            A short, human-readable summary of the problem type. The title is
+            usually the same for all problem with the same `type`.
+          example: >-
+            User is not authorized to perform the requested action or access the
+            requested resource.
+        status:
+          type: integer
+          format: int32
+          description: >
+            The [HTTP status
+            code](https://datatracker.ietf.org/doc/html/rfc7231#section-6) for
+            this occurrence of the problem.
+          minimum: 100
+          maximum: 599
+          example: 403
+        detail:
+          type: string
+          description: >
+            A human-readable explanation specific to this occurrence of the
+            problem.
+          example: User is not authorized to perform this operation.
+        instance:
+          type: string
+          format: uri-reference
+          description: >
+            A URI reference that identifies the specific occurrence of the
+            problem. This is the URI of an API resource that the problem is
+            related to, with a unique error correlation ID URI fragment
+          example: >-
+            https://prduction.api.apiture.com/banking/accounts/ad80fc3e722q5402a#189c13ff-c54c-45f7-b8e0-c88984ba724d
+        id:
+          description: >-
+            The unique identifier for this problem. This is an immutable opaque
+            string.
+          allOf:
+            - $ref: '#/components/schemas/readOnlyResourceId'
+        occurredAt:
+          description: >-
+            The timestamp when the problem occurred, in [RFC
+            3339](https://tools.ietf.org/html/rfc3339) date-time
+            `YYYY-MM-DDThh:mm:ss.sssZ` format, UTC.
+          $ref: '#/components/schemas/readOnlyTimestamp'
+        problems:
+          description: >-
+            Optional root-causes if there are multiple problems in the request
+            or API call processing.
+          type: array
+          items:
+            $ref: '#/components/schemas/apiProblem'
+        attributes:
+          type: object
+          description: >-
+            Additional optional attributes related to the problem. This data
+            conforms to the schema associated with the error type.
+          additionalProperties: true
+      example:
+        type: https://production.api.apiture.com/errors/accountNotFound/v1.0.0
+        title: Account Not Found
+        status: 422
+        occurredAt: '2022-04-25T12:42:21.375Z'
+        detail: No account exists at the given account_url
+        instance: https://api.apiture.com/banking/transfers/bb709151-575041fcd617
+      x-resolved-from: ../../common/openapi.yaml#/components/schemas/apiProblem
+    abstractPagedBodyFields:
+      description: Common properties of collection page responses.
+      x-apiture-fragment: true
+      type: object
+      required:
+        - limit
+      properties:
+        limit:
+          description: >-
+            The number of items requested for this page response. The length of
+            the `items` array may be less that `limit`.
+          type: integer
+          format: int32
+          minimum: 0
+          default: 100
+        nextPage_url:
+          description: >-
+            The URL of the next page of resources If this URL is omitted, there
+            are no more resources in the collection.
+          readOnly: true
+          maxLength: 8000
+          type: string
+          format: uri
+          example: https://api.apiture.com/banking/resources/8b76b4a97dccad88890e
+      x-resolved-from: ../../common/openapi.yaml#/components/schemas/abstractPagedBodyFields
+      x-apiture-version: 1.0.0
+      title: ' (v1.0.0)'
+    readOnlyTimestamp:
+      title: Read-Only Timestamp (v1.0.0)
+      description: >-
+        A readonly or derived timestamp (an instant in time) formatted in [RFC
+        3339](https://tools.ietf.org/html/rfc3339) `date-time` UTC format:
+        `YYYY-MM-DDThh:mm:ss.sssZ`.<br>The schema `readOnlyTimestamp` was added
+        on version `0.4.0` of the API.
+      type: string
+      minLength: 20
+      maxLength: 30
+      format: date-time
+      readOnly: true
+      example: '2021-10-30T19:06:04.250Z'
+      x-apiture-since: 0.4.0
+      x-resolved-from: ../../common/openapi.yaml#/components/schemas/readOnlyTimestamp
+      x-apiture-version: 1.0.0
+x-apiture-errors:
+  noSuchAccount:
+    description: No such account was found or accessible for the given `{accountId}`.
+    remediation: Specify the ID of an available account.
+  noSuchTransaction:
+    description: >-
+      No such transaction was found or accessible for the given
+      `{transactionId}`.
+    remediation: Specify the ID of a valid transaction for the account.

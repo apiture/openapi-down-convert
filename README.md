@@ -70,6 +70,19 @@ mySchema:
 This also applies to the schema used in parameters or in `requestBody` objects
 and in responses.
 
+**Note** This transformation is commented out - it breaks `openapi-generator`. We end up with Typescript types for
+such as
+
+```
+  incompleteAccounts: Array | null;
+```
+
+which should be
+
+```
+  incompleteAccounts: Array<string> | null;
+```
+
 Other (non-JSON Schema) OpenAPI 3.1 `$ref` objects can have `description` and `summary`. `$ref`
 for non-schema objects in OpenAPI 3.0 cannot have `description` and
 `summary`. For this converter, we'll simply remove `description` and
@@ -81,6 +94,9 @@ Some JSON Schema related changes:
 
 * OpenAPI 3.0 uses an earlier version, so convert `examples` in schema
   to a single `example`.
+  * As a special case, if the resulting `example` includes an `id`, it is
+  deleted if the `--delete-examples-with-id` CLI option is set.
+  This addresses [Spectral issue 2081](https://github.com/stoplightio/spectral/issues/2081).
 * We don't yet use `exclusiveMinimum` and `exclusiveMaximum` so this tool does not handle that.
 
 Other changes:

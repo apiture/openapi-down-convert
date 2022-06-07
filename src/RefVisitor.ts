@@ -55,15 +55,16 @@ export function visitSchemaObjects(node: any, schemaCallback: SchemaVisitor): an
     if (node.hasOwnProperty('schema')) {
       const schema = node['schema'];
       if (schema != null && typeof schema === 'object') {
-        return schemaCallback(schema);
+        node['schema'] = schemaCallback(schema);
+        return node;
       }
     } else if (node.hasOwnProperty('schemas')) {
       const schemas = node['schemas'];
       if (schemas != null && typeof schemas === 'object') {
-        schemas.each((schemaName) => {
+        for (const schemaName in schemas) {
           const schema = schemas[schemaName];
           schemas[schemaName] = schemaCallback(schema);
-        });
+        }
       }
     }
     return node;

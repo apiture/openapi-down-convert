@@ -1,6 +1,14 @@
 import * as v8 from 'v8';
 
-import { visitRefObjects, walkObject, RefVisitor, JsonNode, RefObject } from './RefVisitor';
+import {
+  visitRefObjects,
+  visitSchemaObjects,
+  RefVisitor,
+  JsonNode,
+  RefObject,
+  SchemaVisitor,
+  SchemaObject,
+} from './RefVisitor';
 
 interface OpenAPI3 {
   openapi: string;
@@ -10,13 +18,20 @@ interface OpenAPI3 {
   tags: object;
 }
 
+export interface ConverterOptions {
+  verbose: boolean;
+  deleteExampleWithId: boolean;
+}
+
 export class Converter {
   private openapi30: OpenAPI3;
   private verbose = false;
+  private deleteExampleWithId = false;
 
-  constructor(openapiDocument: object, verbose = false) {
+  constructor(openapiDocument: object, options?: ConverterOptions) {
     this.openapi30 = Converter.deepClone(openapiDocument) as OpenAPI3;
-    this.verbose = verbose;
+    this.verbose = options?.verbose;
+    this.deleteExampleWithId = options?.deleteExampleWithId;
   }
 
   private log(...message) {
@@ -28,16 +43,6 @@ export class Converter {
     message[0] = `Warning: ${message[0]}`;
     console.warn(...message);
   }
-
-  jsonSchemaRefVisitor: RefVisitor = (node: RefObject): JsonNode => {
-    if (Object.keys(node).length === 1) {
-      return node;
-    } else {
-      node['allOf'] = [{ $ref: node.$ref }];
-      delete node.$ref;
-      return node;
-    }
-  };
 
   jsonReferenceVisitor: RefVisitor = (node: RefObject): JsonNode => {
     if (Object.keys(node).length === 1) {
@@ -60,7 +65,7 @@ export class Converter {
   public convert(): object {
     this.log('Converting from OpenAPI 3.1 to 3.0');
     this.openapi30.openapi = '3.0.3';
-    this.convertSchemaRef();
+    // this.convertSchemaRef();
     this.simplifyNonSchemaRef();
     this.convertSecuritySchemes();
     this.convertJsonSchemaExamples();
@@ -73,19 +78,28 @@ export class Converter {
    * Replace all `examples` with `example`, using `examples[0]`
    */
   convertJsonSchemaExamples() {
-    const objectVisitor = (node: object): JsonNode => {
+    const schemaVisitor: SchemaVisitor = (node: SchemaObject): SchemaObject => {
       if (node.hasOwnProperty('examples')) {
         const examples = node['examples'];
-        if (Array.isArray(examples)) {
-          const first = examples[0];
-          node['example'] = first;
+        if (Array.isArray(examples) && examples.length > 0) {
           delete node['examples'];
+          const first = examples[0];
+          if (this.deleteExampleWithId && first != null && typeof first === 'object' && first.hasOwnProperty('id')) {
+            this.warn(`Deleted schema example with \`id\` property:\n${this.json(examples)}`);
+          } else {
+            node['example'] = first;
+            this.warn(`Replaces examples with examples[0]. Old examples:\n${this.json(examples)}`);
+          }
         }
       }
       return node;
     };
-    const schemas = this.openapi30?.components?.['schemas'] || {};
-    return walkObject(schemas, objectVisitor);
+    const schemas = this.openapi30;
+    visitSchemaObjects(schemas, schemaVisitor);
+  }
+
+  private json(x) {
+    return JSON.stringify(x, null, 2);
   }
 
   /**
@@ -101,6 +115,7 @@ export class Converter {
       const scheme = schemes[schemeName];
       const type = scheme.type;
       if (type === 'openIdConnect') {
+        this.log(`Converting openIdConnect security scheme to oauth2/authorizationCode`);
         scheme.type = 'oauth2';
         const openIdConnectUrl = scheme.openIdConnectUrl;
         scheme.description = `OAuth2 Authorization Code Flow. The client may
@@ -151,28 +166,37 @@ export class Converter {
     return scopes;
   }
 
-  /**
-   * In a JSON Schema, replace `{ blah blah, $ref: "uri"}`
-   * with `{ blah blah, allOf: [ $ref: "uri" ]}`
-   * @param object an object that may contain JSON schemas (directly
-   * or in sub-objects)
-   */
-  private simplifyRefObjectsInSchemas(object: object) {
-    visitRefObjects(object, this.jsonSchemaRefVisitor);
-  }
+  // This transformation ends up breaking openapi-generator
+  // SDK gen (typescript-axios, typescript-angular)
+  // so I've removed it.
 
-  convertSchemaRef() {
-    walkObject(this.openapi30, (o: object): JsonNode => {
-      const keys = Object.keys(o);
-      if (keys.includes('schema')) {
-        this.simplifyRefObjectsInSchemas(o['schema']);
-      }
-      if (keys.includes('schemas')) {
-        this.simplifyRefObjectsInSchemas(o['schemas']);
-      }
-      return o;
-    });
-  }
+  // jsonSchemaRefVisitor: RefVisitor = (node: RefObject): JsonNode => {
+  //   if (Object.keys(node).length === 1) {
+  //     return node;
+  //   } else {
+  //     this.log(`Converting JSON Schema $ref ${this.json(node)} to allOf: [ $ref ]`);
+  //     node['allOf'] = [{ $ref: node.$ref }];
+  //     delete node.$ref;
+  //     return node;
+  //   }
+  // };
+
+  // /**
+  //  * In a JSON Schema, replace `{ blah blah, $ref: "uri"}`
+  //  * with `{ blah blah, allOf: [ $ref: "uri" ]}`
+  //  * @param object an object that may contain JSON schemas (directly
+  //  * or in sub-objects)
+  //  */
+  // private simplifyRefObjectsInSchemas(object: object): JsonNode {
+  //   return visitRefObjects(object, this.jsonSchemaRefVisitor);
+  //   return object;
+  // }
+
+  // convertSchemaRef() {
+  //   visitSchemaObjects(this.openapi30, (schema: SchemaObject): SchemaObject => {
+  //     return this.simplifyRefObjectsInSchemas(schema) as SchemaObject;
+  //   });
+  // }
 
   public static deepClone = (obj: object): object => {
     return v8.deserialize(v8.serialize(obj)); // kinda simple way to clone, but it works...
