@@ -22,7 +22,7 @@ async function main(args: string[] = process.argv) {
   const opts = cli.opts();
   const sourceFileName: string = opts.input || 'openapi.yaml';
   const outputFileName: string = opts.output;
-  const source = yaml.parse(fs.readFileSync(sourceFileName, 'utf8'));
+  const source = yaml.load(fs.readFileSync(sourceFileName, 'utf8'));
   const converter = new Converter(source, !!opts.verbose);
   try {
     const resolved = converter.convert();
