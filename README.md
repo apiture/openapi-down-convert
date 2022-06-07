@@ -80,8 +80,8 @@ OpenAPI 3.1 also uses JSON Scheme 2020-12
 Some JSON Schema related changes:
 
 * OpenAPI 3.0 uses an earlier version, so convert `examples` in schema
-  to a single example.
-* We don't yet use `exclusiveMinimum` and `exclusiveMaximum`
+  to a single `example`.
+* We don't yet use `exclusiveMinimum` and `exclusiveMaximum` so this tool does not handle that.
 
 Other changes:
 

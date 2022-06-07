@@ -18,11 +18,19 @@ export interface RefObject {
  */
 export type JsonNode = object | [] | string | boolean | null | number;
 
+/** A JSON Schema object in an API def */
+export type SchemaObject = object;
+
 /**
  * Function signature for the visitRefObjects callback
  */
 export type RefVisitor = (node: RefObject) => JsonNode;
+/**
+ * Function signature for the visitSchemaObjects callback
+ */
+export type SchemaVisitor = (node: SchemaObject) => SchemaObject;
 
+/**
 /**
  * Function signature for the walkObject callback
  */
@@ -36,10 +44,37 @@ export function isRef(node: object): boolean {
 }
 
 /**
+ * Walk a JSON object and apply `schemaCallback` when a JSON schema is found.
+ * JSON Schema objects are items in components/schemas or in an item named `schema`
+ * @param node a node in the OpenAPI document
+ * @param schemaCallback the function to call on JSON schema objects
+ * @return the modified (annotated) node
+ */
+export function visitSchemaObjects(node: any, schemaCallback: SchemaVisitor): any {
+  const objectVisitor = (node: object): JsonNode => {
+    if (node.hasOwnProperty('schema')) {
+      const schema = node['schema'];
+      if (schema != null && typeof schema === 'object') {
+        return schemaCallback(schema);
+      }
+    } else if (node.hasOwnProperty('schemas')) {
+      const schemas = node['schemas'];
+      if (schemas != null && typeof schemas === 'object') {
+        schemas.each((schemaName) => {
+          const schema = schemas[schemaName];
+          schemas[schemaName] = schemaCallback(schema);
+        });
+      }
+    }
+    return node;
+  };
+  return walkObject(node, objectVisitor);
+}
+
+/**
  * Walk a JSON object and apply `refCallback` when a JSON `{$ref: url }` is found
  * @param node a node in the OpenAPI document
  * @param refCallback the function to call on JSON `$ref` objects
- * @param nav tracks where we are in the original document
  * @return the modified (annotated) node
  */
 export function visitRefObjects(node: any, refCallback: RefVisitor): any {
