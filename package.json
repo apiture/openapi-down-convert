@@ -1,6 +1,6 @@
 {
   "name": "@apiture/openapi-down-convert",
-  "version": "0.1.4",
+  "version": "0.2.0",
   "description": "Tool to down convert OpenAPI 3.1 to OpenAPI 3.0",
   "main": "lib/src/index.js",
   "bin": {
