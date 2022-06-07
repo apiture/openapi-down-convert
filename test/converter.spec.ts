@@ -144,6 +144,40 @@ describe('resolver test suite', () => {
     done();
   });
 
+  test('Convert schema examples to example', (done) => {
+    // const sourceFileName = path.join(__dirname, 'data/root.yaml'); // __dirname is the test dir
+    const input = {
+      components: {
+        schemas: {
+          a: {
+            type: 'string',
+            examples: ['foo', 'bar'],
+          },
+          b: {
+            description: 'a B string based on components/schemas/a',
+            title: 'a B string',
+            $ref: '#/components/schemas/a',
+            examples: ['Foo', 'Bar'],
+          },
+        },
+      },
+    };
+    const converter = new Converter(input);
+    const converted: any = converter.convert();
+    {
+      const a = converted.components.schemas.a;
+      expect(a.examples).toBeUndefined();
+      const example = a.example;
+      expect(example).toEqual('foo');
+    }
+    {
+      const b = converted.components.schemas.b;
+      expect(b.examples).toBeUndefined();
+      const example = b.example;
+      expect(example).toEqual('Foo');
+    }
+    done();
+  });
   xit('Disabled test stub, so we can leave xit in the imports and use when needed', (done) => {
     done();
   });

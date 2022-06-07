@@ -63,8 +63,31 @@ export class Converter {
     this.convertSchemaRef();
     this.simplifyNonSchemaRef();
     this.convertSecuritySchemes();
+    this.convertJsonSchemaExamples();
     return this.openapi30;
   }
+
+  /**
+   * OpenAPI 3.1 uses JSON Schema 2020-12 which allows schema `examples`;
+   * OpenAPI 3.0 uses JSON Scheme Draft 7 which only allows `example`.
+   * Replace all `examples` with `example`, using `examples[0]`
+   */
+  convertJsonSchemaExamples() {
+    const objectVisitor = (node: object): JsonNode => {
+      if (node.hasOwnProperty('examples')) {
+        const examples = node['examples'];
+        if (Array.isArray(examples)) {
+          const first = examples[0];
+          node['example'] = first;
+          delete node['examples'];
+        }
+      }
+      return node;
+    };
+    const schemas = this.openapi30?.components?.['schemas'] || {};
+    return walkObject(schemas, objectVisitor);
+  }
+
   /**
    * OpenAPI 3.1 defines a new `openIdConnect` security scheme.
    * Down-convert the scheme to `oauth2` / authorization code flow.
