@@ -17,13 +17,15 @@ async function main(args: string[] = process.argv) {
     .usage('[options]')
     .option('-i, --input <input-file>', 'A OpenAPI 3.1 file name or URL. Defaults to "openapi.yaml"')
     .option('-o, --output <output-file>', 'The output file, defaults to stdout if omitted')
+    .option('-d, --delete-examples-with-id', 'If set, delete any JSON Schema examples that have an `id` property')
     .option('-v, --verbose', 'Verbose output')
     .parse(args);
   const opts = cli.opts();
   const sourceFileName: string = opts.input || 'openapi.yaml';
   const outputFileName: string = opts.output;
   const source = yaml.load(fs.readFileSync(sourceFileName, 'utf8'));
-  const converter = new Converter(source, !!opts.verbose);
+  const cOpts = { verbose: !!opts.verbose, deleteExampleWithId: !!opts.deleteExamplesWithId, allOfTransform: false };
+  const converter = new Converter(source, cOpts);
   try {
     const resolved = converter.convert();
     if (outputFileName) {
