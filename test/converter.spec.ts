@@ -23,10 +23,8 @@ describe('resolver test suite', () => {
     expect(converted.openapi).toEqual('3.0.3');
     done();
   });
-  // This transformation ends up breaking openapi-generator
-  // SDK gen (typescript-axios, typescript-angular)
-  // so I've removed it.
-  xit('Convert changes $ref object to allOf', (done) => {
+
+  test('Convert changes $ref object to allOf', (done) => {
     // const sourceFileName = path.join(__dirname, 'data/root.yaml'); // __dirname is the test dir
     const input = {
       components: {
@@ -42,13 +40,25 @@ describe('resolver test suite', () => {
         },
       },
     };
-    const converter = new Converter(input);
-    const converted: any = converter.convert();
-    const b = converted.components.schemas.b;
-    expect(b.$ref).toBeUndefined();
-    const allOf = b.allOf;
-    expect(allOf).toBeDefined();
-    expect(allOf[0].$ref).toEqual('#/components/schemas/a');
+    // First test default: allOfTransform = false
+    {
+      const converter = new Converter(input);
+      const converted: any = converter.convert();
+      const b = converted.components.schemas.b;
+      expect(b.$ref).toBeDefined();
+      expect(b.$ref).toEqual('#/components/schemas/a');
+      expect(Object.keys(b)).toEqual(['$ref']);
+    }
+    // test with allOfTransform = true
+    {
+      const converter = new Converter(input, { allOfTransform: true });
+      const converted: any = converter.convert();
+      const b = converted.components.schemas.b;
+      expect(b.$ref).toBeUndefined();
+      const allOf = b.allOf;
+      expect(allOf).toBeDefined();
+      expect(allOf[0].$ref).toEqual('#/components/schemas/a');
+    }
     done();
   });
   test('Convert changes $ref object to JSON Reference', (done) => {
@@ -162,7 +172,7 @@ describe('resolver test suite', () => {
         },
       },
     };
-    const converter = new Converter(input);
+    const converter = new Converter(input, { allOfTransform: true });
     const converted: any = converter.convert();
     {
       const a = converted.components.schemas.a;
@@ -173,7 +183,7 @@ describe('resolver test suite', () => {
     done();
   });
 
-  xit('Convert schema $ref/examples to example', (done) => {
+  test('Convert schema $ref/examples to example', (done) => {
     // const sourceFileName = path.join(__dirname, 'data/root.yaml'); // __dirname is the test dir
     const input = {
       components: {
@@ -191,7 +201,7 @@ describe('resolver test suite', () => {
         },
       },
     };
-    const converter = new Converter(input);
+    const converter = new Converter(input, { allOfTransform: true });
     const converted: any = converter.convert();
     {
       const a = converted.components.schemas.a;

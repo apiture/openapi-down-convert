@@ -1,14 +1,6 @@
 import * as v8 from 'v8';
 
-import {
-  visitRefObjects,
-  visitSchemaObjects,
-  RefVisitor,
-  JsonNode,
-  RefObject,
-  SchemaVisitor,
-  SchemaObject,
-} from './RefVisitor';
+import { visitRefObjects, visitSchemaObjects, JsonNode, RefObject, SchemaVisitor, SchemaObject } from './RefVisitor';
 
 interface OpenAPI3 {
   openapi: string;
@@ -19,19 +11,22 @@ interface OpenAPI3 {
 }
 
 export interface ConverterOptions {
-  verbose: boolean;
-  deleteExampleWithId: boolean;
+  verbose?: boolean;
+  deleteExampleWithId?: boolean;
+  allOfTransform?: boolean;
 }
 
 export class Converter {
   private openapi30: OpenAPI3;
   private verbose = false;
   private deleteExampleWithId = false;
+  private allOfTransform = false;
 
   constructor(openapiDocument: object, options?: ConverterOptions) {
     this.openapi30 = Converter.deepClone(openapiDocument) as OpenAPI3;
-    this.verbose = options?.verbose;
-    this.deleteExampleWithId = options?.deleteExampleWithId;
+    this.verbose = !!options?.verbose;
+    this.deleteExampleWithId = !!options?.deleteExampleWithId;
+    this.allOfTransform = !!options?.allOfTransform;
   }
 
   private log(...message) {
@@ -44,20 +39,6 @@ export class Converter {
     console.warn(...message);
   }
 
-  jsonReferenceVisitor: RefVisitor = (node: RefObject): JsonNode => {
-    if (Object.keys(node).length === 1) {
-      return node;
-    } else {
-      this.warn(`Down convert reference object to JSON Reference:\n${JSON.stringify(node, null, 3)}`);
-      for (const key in node) {
-        if (key !== '$ref') {
-          delete node[key];
-        }
-      }
-      return node;
-    }
-  };
-
   /**
    * Convert the OpenAPI document to 3.0
    * @returns the converted document. The input is not modified.
@@ -65,7 +46,7 @@ export class Converter {
   public convert(): object {
     this.log('Converting from OpenAPI 3.1 to 3.0');
     this.openapi30.openapi = '3.0.3';
-    // this.convertSchemaRef();
+    this.convertSchemaRef();
     this.simplifyNonSchemaRef();
     this.convertSecuritySchemes();
     this.convertJsonSchemaExamples();
@@ -110,6 +91,28 @@ export class Converter {
    * URLs to the `authorizationUrl` and `tokenUrl` of `oauth2`.
    */
   convertSecuritySchemes() {
+    const oauth2Scopes = (schemeName: string): object => {
+      const scopes = {};
+      const paths = this.openapi30?.paths;
+      for (const path in paths) {
+        for (const op in paths[path]) {
+          if (op === 'parameters') {
+            continue;
+          }
+          const operation = paths[path][op];
+          const sec = operation?.security as object[];
+          sec.forEach((s) => {
+            const requirement = s?.[schemeName] as string[];
+            if (requirement) {
+              requirement.forEach((scope) => {
+                scopes[scope] = scope;
+              });
+            }
+          });
+        }
+      }
+      return scopes;
+    };
     const schemes = this.openapi30?.components?.['securitySchemes'] || {};
     for (const schemeName in schemes) {
       const scheme = schemes[schemeName];
@@ -122,7 +125,7 @@ export class Converter {
           GET the OpenID Connect configuration JSON from \`${openIdConnectUrl}\`
           to get the correct \`authorizationUrl\` and \`tokenUrl\`.`;
         delete scheme.openIdConnectUrl;
-        const scopes = this.oauth2Scopes(schemeName);
+        const scopes = oauth2Scopes(schemeName);
         scheme.flows = {
           authorizationCode: {
             authorizationUrl: 'https://www.example.com/oath2/authorize',
@@ -140,63 +143,52 @@ export class Converter {
    * with _only_ a `$ref` property.
    */
   simplifyNonSchemaRef() {
-    visitRefObjects(this.openapi30, this.jsonReferenceVisitor);
-  }
-
-  oauth2Scopes(schemeName: string): object {
-    const scopes = {};
-    const paths = this.openapi30?.paths;
-    for (const path in paths) {
-      for (const op in paths[path]) {
-        if (op === 'parameters') {
-          continue;
-        }
-        const operation = paths[path][op];
-        const sec = operation?.security as object[];
-        sec.forEach((s) => {
-          const requirement = s?.[schemeName] as string[];
-          if (requirement) {
-            requirement.forEach((scope) => {
-              scopes[scope] = scope;
-            });
+    visitRefObjects(this.openapi30, (node: RefObject): JsonNode => {
+      if (Object.keys(node).length === 1) {
+        return node;
+      } else {
+        this.warn(`Down convert reference object to JSON Reference:\n${JSON.stringify(node, null, 3)}`);
+        for (const key in node) {
+          if (key !== '$ref') {
+            delete node[key];
           }
-        });
+        }
+        return node;
       }
-    }
-    return scopes;
+    });
   }
 
   // This transformation ends up breaking openapi-generator
   // SDK gen (typescript-axios, typescript-angular)
   // so I've removed it.
 
-  // jsonSchemaRefVisitor: RefVisitor = (node: RefObject): JsonNode => {
-  //   if (Object.keys(node).length === 1) {
-  //     return node;
-  //   } else {
-  //     this.log(`Converting JSON Schema $ref ${this.json(node)} to allOf: [ $ref ]`);
-  //     node['allOf'] = [{ $ref: node.$ref }];
-  //     delete node.$ref;
-  //     return node;
-  //   }
-  // };
+  convertSchemaRef() {
+    /**
+     * In a JSON Schema, replace `{ blah blah, $ref: "uri"}`
+     * with `{ blah blah, allOf: [ $ref: "uri" ]}`
+     * @param object an object that may contain JSON schemas (directly
+     * or in sub-objects)
+     */
+    const simplifyRefObjectsInSchemas = (object: object): JsonNode => {
+      return visitRefObjects(object, (node: RefObject): JsonNode => {
+        if (Object.keys(node).length === 1) {
+          return node;
+        } else {
+          this.log(`Converting JSON Schema $ref ${this.json(node)} to allOf: [ $ref ]`);
+          node['allOf'] = [{ $ref: node.$ref }];
+          delete node.$ref;
+          return node;
+        }
+      });
+      return object;
+    };
 
-  // /**
-  //  * In a JSON Schema, replace `{ blah blah, $ref: "uri"}`
-  //  * with `{ blah blah, allOf: [ $ref: "uri" ]}`
-  //  * @param object an object that may contain JSON schemas (directly
-  //  * or in sub-objects)
-  //  */
-  // private simplifyRefObjectsInSchemas(object: object): JsonNode {
-  //   return visitRefObjects(object, this.jsonSchemaRefVisitor);
-  //   return object;
-  // }
-
-  // convertSchemaRef() {
-  //   visitSchemaObjects(this.openapi30, (schema: SchemaObject): SchemaObject => {
-  //     return this.simplifyRefObjectsInSchemas(schema) as SchemaObject;
-  //   });
-  // }
+    if (this.allOfTransform) {
+      visitSchemaObjects(this.openapi30, (schema: SchemaObject): SchemaObject => {
+        return simplifyRefObjectsInSchemas(schema) as SchemaObject;
+      });
+    }
+  }
 
   public static deepClone = (obj: object): object => {
     return v8.deserialize(v8.serialize(obj)); // kinda simple way to clone, but it works...

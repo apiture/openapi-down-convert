@@ -24,7 +24,7 @@ async function main(args: string[] = process.argv) {
   const sourceFileName: string = opts.input || 'openapi.yaml';
   const outputFileName: string = opts.output;
   const source = yaml.load(fs.readFileSync(sourceFileName, 'utf8'));
-  const cOpts = { verbose: !!opts.verbose, deleteExampleWithId: !!opts.deleteExamplesWithId };
+  const cOpts = { verbose: !!opts.verbose, deleteExampleWithId: !!opts.deleteExamplesWithId, allOfTransform: false };
   const converter = new Converter(source, cOpts);
   try {
     const resolved = converter.convert();

@@ -70,18 +70,20 @@ mySchema:
 This also applies to the schema used in parameters or in `requestBody` objects
 and in responses.
 
-**Note** This transformation is commented out - it breaks `openapi-generator`. We end up with Typescript types for
+**Note** This transformation is disabled - it breaks `openapi-generator`. We end up with Typescript types for
 such as
 
-```
+```typescript
   incompleteAccounts: Array | null;
 ```
 
 which should be
 
-```
+```typescript
   incompleteAccounts: Array<string> | null;
-```
+``
+
+To enable, use the `allOfTransform: true` option in the `Converter` constructor.
 
 Other (non-JSON Schema) OpenAPI 3.1 `$ref` objects can have `description` and `summary`. `$ref`
 for non-schema objects in OpenAPI 3.0 cannot have `description` and
