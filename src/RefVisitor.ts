@@ -56,7 +56,6 @@ export function visitSchemaObjects(node: any, schemaCallback: SchemaVisitor): an
       const schema = node['schema'];
       if (schema != null && typeof schema === 'object') {
         node['schema'] = schemaCallback(schema);
-        return node;
       }
     } else if (node.hasOwnProperty('schemas')) {
       const schemas = node['schemas'];

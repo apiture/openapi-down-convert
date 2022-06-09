@@ -169,16 +169,40 @@ describe('resolver test suite', () => {
             type: 'string',
             examples: ['foo', 'bar'],
           },
+          b: {
+            type: 'object',
+            properties: {
+              c: {
+                type: 'string',
+                examples: ['a', 'b'],
+              },
+              d: {
+                type: 'object',
+                examples: [{ id: 'a', x: 'b' }],
+              },
+            },
+          },
         },
       },
     };
-    const converter = new Converter(input, { allOfTransform: true });
+    const converter = new Converter(input, { allOfTransform: true, deleteExampleWithId: true });
     const converted: any = converter.convert();
     {
       const a = converted.components.schemas.a;
       expect(a.examples).toBeUndefined();
       const example = a.example;
       expect(example).toEqual('foo');
+    }
+    {
+      const c = converted.components.schemas.b.properties.c;
+      expect(c.examples).toBeUndefined();
+      const example = c.example;
+      expect(example).toEqual('a');
+    }
+    {
+      const d = converted.components.schemas.b.properties.d;
+      expect(d.hasOwnProperty('examples')).toBeFalsy();
+      expect(d.hasOwnProperty('example')).toBeFalsy();
     }
     done();
   });
