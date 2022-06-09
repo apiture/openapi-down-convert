@@ -169,6 +169,15 @@ describe('resolver test suite', () => {
             type: 'string',
             examples: ['foo', 'bar'],
           },
+          b: {
+            type: 'object',
+            properties: {
+              c: {
+                type: 'string',
+                examples: ['a', 'b'],
+              },
+            },
+          },
         },
       },
     };
@@ -179,6 +188,12 @@ describe('resolver test suite', () => {
       expect(a.examples).toBeUndefined();
       const example = a.example;
       expect(example).toEqual('foo');
+    }
+    {
+      const c = converted.components.schemas.b.properties.c;
+      expect(c.examples).toBeUndefined();
+      const example = c.example;
+      expect(example).toEqual('a');
     }
     done();
   });

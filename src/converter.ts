@@ -1,6 +1,14 @@
 import * as v8 from 'v8';
 
-import { visitRefObjects, visitSchemaObjects, JsonNode, RefObject, SchemaVisitor, SchemaObject } from './RefVisitor';
+import {
+  walkObject,
+  visitSchemaObjects,
+  visitRefObjects,
+  SchemaVisitor,
+  JsonNode,
+  RefObject,
+  SchemaObject,
+} from './RefVisitor';
 
 interface OpenAPI3 {
   openapi: string;
@@ -59,24 +67,37 @@ export class Converter {
    * Replace all `examples` with `example`, using `examples[0]`
    */
   convertJsonSchemaExamples() {
-    const schemaVisitor: SchemaVisitor = (node: SchemaObject): SchemaObject => {
-      if (node.hasOwnProperty('examples')) {
-        const examples = node['examples'];
-        if (Array.isArray(examples) && examples.length > 0) {
-          delete node['examples'];
-          const first = examples[0];
-          if (this.deleteExampleWithId && first != null && typeof first === 'object' && first.hasOwnProperty('id')) {
-            this.warn(`Deleted schema example with \`id\` property:\n${this.json(examples)}`);
+    const schemaVisitor: SchemaVisitor = (schema: SchemaObject): SchemaObject => {
+      for (const key in schema) {
+        const subSchema = schema[key];
+        if (subSchema !== null && typeof subSchema === 'object') {
+          if (key === 'examples') {
+            const examples = schema['examples'];
+            if (Array.isArray(examples) && examples.length > 0) {
+              delete schema['examples'];
+              const first = examples[0];
+              if (
+                this.deleteExampleWithId &&
+                first != null &&
+                typeof first === 'object' &&
+                first.hasOwnProperty('id')
+              ) {
+                this.warn(`Deleted schema example with \`id\` property:\n${this.json(examples)}`);
+              } else {
+                schema['example'] = first;
+                this.warn(`Replaces examples with examples[0]. Old examples:\n${this.json(examples)}`);
+              }
+              // TODO: Add an else here to check example for `id` and delete the example if this.deleteExampleWithId
+              // We've put most of those in `examples` so this is probably not needed, but it would be more robust.
+            }
           } else {
-            node['example'] = first;
-            this.warn(`Replaces examples with examples[0]. Old examples:\n${this.json(examples)}`);
+            schema[key] = walkObject(subSchema, schemaVisitor);
           }
         }
       }
-      return node;
+      return schema;
     };
-    const schemas = this.openapi30;
-    visitSchemaObjects(schemas, schemaVisitor);
+    visitSchemaObjects(this.openapi30, schemaVisitor);
   }
 
   private json(x) {
@@ -184,8 +205,8 @@ export class Converter {
     };
 
     if (this.allOfTransform) {
-      visitSchemaObjects(this.openapi30, (schema: SchemaObject): SchemaObject => {
-        return simplifyRefObjectsInSchemas(schema) as SchemaObject;
+      walkObject(this.openapi30, (schema: object): JsonNode => {
+        return simplifyRefObjectsInSchemas(schema);
       });
     }
   }
