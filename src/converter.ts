@@ -39,11 +39,13 @@ export class Converter {
 
   private log(...message) {
     if (this.verbose) {
-      console.warn(...message);
+      this.warn(...message);
     }
   }
   private warn(...message) {
-    message[0] = `Warning: ${message[0]}`;
+    if (!message[0].startsWith('Warning')) {
+      message[0] = `Warning: ${message[0]}`;
+    }
     console.warn(...message);
   }
 
@@ -82,10 +84,10 @@ export class Converter {
                 typeof first === 'object' &&
                 first.hasOwnProperty('id')
               ) {
-                this.warn(`Deleted schema example with \`id\` property:\n${this.json(examples)}`);
+                this.log(`Deleted schema example with \`id\` property:\n${this.json(examples)}`);
               } else {
                 schema['example'] = first;
-                this.warn(`Replaces examples with examples[0]. Old examples:\n${this.json(examples)}`);
+                this.log(`Replaces examples with examples[0]. Old examples:\n${this.json(examples)}`);
               }
               // TODO: Add an else here to check example for `id` and delete the example if this.deleteExampleWithId
               // We've put most of those in `examples` so this is probably not needed, but it would be more robust.
@@ -168,7 +170,7 @@ export class Converter {
       if (Object.keys(node).length === 1) {
         return node;
       } else {
-        this.warn(`Down convert reference object to JSON Reference:\n${JSON.stringify(node, null, 3)}`);
+        this.log(`Down convert reference object to JSON Reference:\n${JSON.stringify(node, null, 3)}`);
         for (const key in node) {
           if (key !== '$ref') {
             delete node[key];
