@@ -1,5 +1,7 @@
 #!/usr/bin/env node
 
+/** Command Line interface for openapi-down-convert */
+
 import * as fs from 'fs';
 
 import { Command } from 'commander';
@@ -8,15 +10,18 @@ import * as path from 'path';
 import * as yaml from 'js-yaml';
 
 import { version } from '../package.json';
-import { Converter } from './converter';
+import { Converter, ConverterOptions } from './converter';
 
 async function main(args: string[] = process.argv) {
   const cli = new Command();
   cli
     .version(version)
     .usage('[options]')
-    .option('-i, --input <input-file>', 'A OpenAPI 3.1 file name or URL. Defaults to "openapi.yaml"')
+    .option('-i, --input <input-file>', 'A OpenAPI 3.1 file name. Defaults to "openapi.yaml"')
     .option('-o, --output <output-file>', 'The output file, defaults to stdout if omitted')
+    .option('-a, --allOf', 'If set, convert complex $ref in JSON schemas to allOf')
+    .option('--authorizationUrl <authorizationUrl>', 'The authorizationUrl for openIdConnect -> oauth2 transformation')
+    .option('--tokenUrl <tokenUrl>', 'The tokenUrl for openIdConnect -> oauth2 transformation')
     .option('-d, --delete-examples-with-id', 'If set, delete any JSON Schema examples that have an `id` property')
     .option('-v, --verbose', 'Verbose output')
     .parse(args);
@@ -24,7 +29,13 @@ async function main(args: string[] = process.argv) {
   const sourceFileName: string = opts.input || 'openapi.yaml';
   const outputFileName: string = opts.output;
   const source = yaml.load(fs.readFileSync(sourceFileName, 'utf8'));
-  const cOpts = { verbose: !!opts.verbose, deleteExampleWithId: !!opts.deleteExamplesWithId, allOfTransform: false };
+  const cOpts: ConverterOptions = {
+    verbose: !!opts.verbose,
+    deleteExampleWithId: !!opts.deleteExamplesWithId,
+    allOfTransform: !!opts.allOf,
+    authorizationUrl: opts.authorizationUrl,
+    tokenUrl: opts.tokenUrl,
+  };
   const converter = new Converter(source, cOpts);
   try {
     const resolved = converter.convert();

@@ -10,7 +10,7 @@ import * as fs from 'fs';
 import * as path from 'path';
 import * as yaml from 'js-yaml';
 
-import { Converter } from '../src/converter';
+import { Converter, ConverterOptions } from '../src/converter';
 
 describe('resolver test suite', () => {
   test('Convert changes openapi: 3.1.x to 3.0.x', (done) => {
@@ -131,7 +131,11 @@ describe('resolver test suite', () => {
         },
       },
     };
-    const converter = new Converter(input);
+    const options: ConverterOptions = {
+      authorizationUrl: 'https://www.example.com/test/authorize',
+      tokenUrl: 'https://www.example.com/test/token',
+    };
+    const converter = new Converter(input, options);
     const converted: any = converter.convert();
     {
       const accessToken1 = converted.components.securitySchemes.accessToken1;
@@ -145,6 +149,9 @@ describe('resolver test suite', () => {
       expect(scopes1['thing/write']).toBeTruthy();
       expect(scopes1['profile/read']).toBeTruthy();
       expect(scopes1['profile/write']).toBeTruthy();
+      const flow1 = accessToken1.flows.authorizationCode;
+      expect(flow1.authorizationUrl).toEqual(options.authorizationUrl);
+      expect(flow1.tokenUrl).toEqual(options.tokenUrl);
     }
     {
       const accessToken2 = converted.components.securitySchemes.accessToken2;
@@ -156,6 +163,9 @@ describe('resolver test suite', () => {
       expect(Object.keys(scopes2).length).toBe(2);
       expect(scopes2['foo/read']).toBeTruthy();
       expect(scopes2['foo/write']).toBeTruthy();
+      const flow2 = accessToken2.flows.authorizationCode;
+      expect(flow2.authorizationUrl).toEqual(options.authorizationUrl);
+      expect(flow2.tokenUrl).toEqual(options.tokenUrl);
     }
     done();
   });
@@ -249,7 +259,7 @@ describe('resolver test suite', () => {
     const source = fs.readFileSync(sourceFileName, 'utf8');
     const input = yaml.load(source);
     expect(input).toBeDefined();
-    const cOpts = { verbose: true, deleteExampleWithId: true };
+    const cOpts: ConverterOptions = { verbose: false, deleteExampleWithId: true };
     const converter = new Converter(input, cOpts);
     const converted: any = converter.convert();
     const accountIdPathParam = converted.components.parameters.accountIdPathParam;
