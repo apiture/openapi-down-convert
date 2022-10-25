@@ -81,7 +81,11 @@ Change `openapi: 3.1.x` to `openapi: 3.0.3`
 
 ### &DownArrowBar; `openIdConnect` security definitions
 
-Replace `openIdConnect` security definition with an `oauth2` security requirement - they are close enough, as far as code generation (such as `openapi-generator`) is concerned - it just means an `Authorization: header` must have a valid token. The main difference between the two is how a client knows how to authenticate in order to use the API, but they will do that from the actual API doc which will still be `openIdConnect`.
+Replace `openIdConnect` security definition with an `oauth2` security requirement - they are close enough, as far as code generation (such as `openapi-generator`) is concerned - it just means an `Authorization: header` must have a valid token. Use the options
+to specify the `authorizationUrl` and `tokenUrl` for the
+`oauth2` security definition.
+
+TODO: Fetch the openIdConnect connection info and extract the authorization and token URLs from it.
 
 ```yaml
     accessToken:
