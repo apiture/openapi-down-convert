@@ -1,5 +1,7 @@
 import * as v8 from 'v8';
 
+/** OpenAPI Down Converted - convert an OAS document from OAS 3.1 to OAS 3.0 */
+
 import {
   walkObject,
   visitSchemaObjects,
@@ -10,6 +12,7 @@ import {
   SchemaObject,
 } from './RefVisitor';
 
+/** Lightweight OAS document top-level fields */
 interface OpenAPI3 {
   openapi: string;
   info: object;
@@ -18,10 +21,23 @@ interface OpenAPI3 {
   tags: object;
 }
 
+/** Options for the converter instantiation */
 export interface ConverterOptions {
+  /** if `true`, log conversion transformations to stderr  */
   verbose?: boolean;
+  /** if `true`, remove `id` values in schema examples, to bypass
+   * [Spectral issue 2081](https://github.com/stoplightio/spectral/issues/2081)
+   */
   deleteExampleWithId?: boolean;
+  /** If `true`, replace a `$ref` object that has siblings into an `allOf` */
   allOfTransform?: boolean;
+
+  /**
+   * The authorizationUrl for openIdConnect -> oauth2 transformation
+   */
+  authorizationUrl?: string;
+  /** The tokenUrl for openIdConnect -> oauth2 transformation */
+  tokenUrl?: string;
 }
 
 export class Converter {
@@ -29,12 +45,17 @@ export class Converter {
   private verbose = false;
   private deleteExampleWithId = false;
   private allOfTransform = false;
+  private authorizationUrl: string;
+  /** The tokenUrl for openIdConnect -> oauth2 transformation */
+  private tokenUrl: string;
 
   constructor(openapiDocument: object, options?: ConverterOptions) {
     this.openapi30 = Converter.deepClone(openapiDocument) as OpenAPI3;
     this.verbose = !!options?.verbose;
     this.deleteExampleWithId = !!options?.deleteExampleWithId;
     this.allOfTransform = !!options?.allOfTransform;
+    this.authorizationUrl = options?.authorizationUrl || 'https://www.example.com/oath2/authorize';
+    this.tokenUrl = options?.tokenUrl || 'https://www.example.com/oath2/token';
   }
 
   private log(...message) {
@@ -151,8 +172,9 @@ export class Converter {
         const scopes = oauth2Scopes(schemeName);
         scheme.flows = {
           authorizationCode: {
-            authorizationUrl: 'https://www.example.com/oath2/authorize',
-            tokenUrl: 'https://www.example.com/oath2/token',
+            // TODO: add options for these URLs
+            authorizationUrl: this.authorizationUrl,
+            tokenUrl: this.tokenUrl,
             scopes: scopes,
           },
         };
@@ -171,11 +193,9 @@ export class Converter {
         return node;
       } else {
         this.log(`Down convert reference object to JSON Reference:\n${JSON.stringify(node, null, 3)}`);
-        for (const key in node) {
-          if (key !== '$ref') {
-            delete node[key];
-          }
-        }
+        Object.keys(node)
+          .filter((key) => key !== '$ref')
+          .forEach((key) => delete node[key]);
         return node;
       }
     });
@@ -183,7 +203,7 @@ export class Converter {
 
   // This transformation ends up breaking openapi-generator
   // SDK gen (typescript-axios, typescript-angular)
-  // so I've removed it.
+  // so it is disabled unless the `allOfTransform` option is `true`.
 
   convertSchemaRef() {
     /**
@@ -192,7 +212,7 @@ export class Converter {
      * @param object an object that may contain JSON schemas (directly
      * or in sub-objects)
      */
-    const simplifyRefObjectsInSchemas = (object: object): JsonNode => {
+    const simplifyRefObjectsInSchemas = (object: SchemaObject): SchemaObject => {
       return visitRefObjects(object, (node: RefObject): JsonNode => {
         if (Object.keys(node).length === 1) {
           return node;
@@ -207,13 +227,13 @@ export class Converter {
     };
 
     if (this.allOfTransform) {
-      walkObject(this.openapi30, (schema: object): JsonNode => {
+      visitSchemaObjects(this.openapi30, (schema: SchemaObject): SchemaObject => {
         return simplifyRefObjectsInSchemas(schema);
       });
     }
   }
 
-  public static deepClone = (obj: object): object => {
+  public static deepClone(obj: object): object {
     return v8.deserialize(v8.serialize(obj)); // kinda simple way to clone, but it works...
-  };
+  }
 }

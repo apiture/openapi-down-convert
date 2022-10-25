@@ -10,7 +10,7 @@ import * as fs from 'fs';
 import * as path from 'path';
 import * as yaml from 'js-yaml';
 
-import { Converter } from '../src/converter';
+import { Converter, ConverterOptions } from '../src/converter';
 
 describe('resolver test suite', () => {
   test('Convert changes openapi: 3.1.x to 3.0.x', (done) => {
@@ -249,7 +249,7 @@ describe('resolver test suite', () => {
     const source = fs.readFileSync(sourceFileName, 'utf8');
     const input = yaml.load(source);
     expect(input).toBeDefined();
-    const cOpts = { verbose: true, deleteExampleWithId: true };
+    const cOpts: ConverterOptions = { verbose: false, deleteExampleWithId: true };
     const converter = new Converter(input, cOpts);
     const converted: any = converter.convert();
     const accountIdPathParam = converted.components.parameters.accountIdPathParam;
