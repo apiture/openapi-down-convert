@@ -1,0 +1,67 @@
+{
+  "name": "@apiture/openapi-down-convert",
+  "version": "0.5.0",
+  "description": "Tool to down convert OpenAPI 3.1 to OpenAPI 3.0",
+  "main": "lib/src/index.js",
+  "bin": {
+    "openapi-down-convert": "lib/src/cli.js"
+  },
+  "files": [
+    "lib",
+    "src",
+    "package.json",
+    "README.md",
+    "LICENSE.txt",
+    "prettier.config.js",
+    "tsconfig.json"
+  ],
+  "scripts": {
+    "prepare": "npx tsc",
+    "compile": "npx tsc",
+    "build": "npm run compile",
+    "test": "npx jest --collect-coverage test",
+    "coverage": "true",
+    "lint": "npx eslint --fix --ext .ts src test ",
+    "pipeline-lint": "npx eslint --ext .ts src test",
+    "clean": "npx rimraf lib"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git@github.com:apiture/openapi-down-convert.git"
+  },
+  "keywords": [
+    "OpenAPI",
+    "versions"
+  ],
+  "pre-push": [
+    "lint",
+    "test"
+  ],
+  "author": {
+    "name": "David Biesack",
+    "url": "https://github.com/DavidBiesack"
+  },
+  "license": "ISC",
+  "homepage": "https://github.com/apiture/openapi-down-convert#readme",
+  "dependencies": {
+    "commander": "^9.4.1",
+    "js-yaml": "^4.1.0",
+    "typescript": "^4.8.4"
+  },
+  "devDependencies": {
+    "@jest/globals": "^29.2.2",
+    "@types/commander": "^2.12.2",
+    "@typescript-eslint/eslint-plugin": "^5.41.0",
+    "@typescript-eslint/parser": "^5.41.0",
+    "eslint": "^8.26.0",
+    "eslint-plugin-import": "^2.25.4",
+    "eslint-plugin-jsx-a11y": "^6.6.1",
+    "eslint-plugin-prettier": "^4.2.1",
+    "eslint-plugin-react": "^7.31.10",
+    "jest": "^27.5.1",
+    "pre-push": "^0.1.4",
+    "prettier": "^2.7.1",
+    "rimraf": "^4.1.2",
+    "ts-jest": "^27.1.3"
+  }
+}

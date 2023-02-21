@@ -1,0 +1,18 @@
+{
+  "compilerOptions": {
+    "module": "commonjs",
+    "target": "ES2018",
+    "lib" : ["ES2020"],
+    "outDir": "./lib",
+    "moduleResolution": "node",
+    "removeComments": true,
+    "sourceMap": true,
+    "noUnusedLocals": true,
+    "skipLibCheck": true,
+    "resolveJsonModule": true,
+    "declaration": true
+  },
+  "include": ["src/**/*"],
+  "exclude": ["node_modules", "lib"],
+  "types": ["typePatches"]
+}
