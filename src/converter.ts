@@ -98,6 +98,8 @@ export class Converter {
     this.convertSecuritySchemes();
     this.convertJsonSchemaExamples();
     this.convertConstToEnum();
+    this.convertNullableTypeArray();
+    this.removeUnsupportedSchemaKeywords();
     return this.openapi30;
   }
 
@@ -140,6 +142,16 @@ export class Converter {
     visitSchemaObjects(this.openapi30, schemaVisitor);
   }
 
+  private walkNestedSchemaObjects(schema, schemaVisitor) {
+    for (const key in schema) {
+      const subSchema = schema[key];
+      if (subSchema !== null && typeof subSchema === 'object') {
+        schema[key] = walkObject(subSchema, schemaVisitor);
+      }
+    }
+    return schema;
+  }
+
   /**
    * OpenAPI 3.1 uses JSON Schema 2020-12 which allows `const`
    * OpenAPI 3.0 uses JSON Scheme Draft 7 which only allows `enum`.
@@ -147,20 +159,47 @@ export class Converter {
    */
   convertConstToEnum() {
     const schemaVisitor: SchemaVisitor = (schema: SchemaObject): SchemaObject => {
-      for (const key in schema) {
-        if (key === 'const') {
-          const constant = schema['const'];
-          delete schema['const'];
-          schema['enum'] = [constant];
-        } else {
-          const subSchema = schema[key];
+      if (schema['const']) {
+        const constant = schema['const'];
+        delete schema['const'];
+        schema['enum'] = [constant];
+        this.log(`Converted const: ${constant} to enum`);
+      }
+      return this.walkNestedSchemaObjects(schema, schemaVisitor);
+    };
+    visitSchemaObjects(this.openapi30, schemaVisitor);
+  }
 
-          if (subSchema !== null && typeof subSchema === 'object') {
-            schema[key] = walkObject(subSchema, schemaVisitor);
-          }
+  /**
+   * Convert 2-element type arrays containing 'null' to
+   * string type and `nullable: true`
+   */
+  convertNullableTypeArray() {
+    const schemaVisitor: SchemaVisitor = (schema: SchemaObject): SchemaObject => {
+      if (schema.hasOwnProperty('type')) {
+        const schemaType = schema['type'];
+        if (Array.isArray(schemaType) && schemaType.length === 2 && schemaType.includes('null')) {
+          const nonNull = schemaType.filter((_) => _ !== 'null')[0];
+          schema['type'] = nonNull;
+          schema['nullable'] = true;
+          this.log(`Converted schema type array to nullable`);
         }
       }
-      return schema;
+      return this.walkNestedSchemaObjects(schema, schemaVisitor);
+    };
+    visitSchemaObjects(this.openapi30, schemaVisitor);
+  }
+
+  removeUnsupportedSchemaKeywords() {
+    const keywordsToRemove = ['$id', '$schema', 'unevaluatedProperties'];
+    const schemaVisitor: SchemaVisitor = (schema: SchemaObject): SchemaObject => {
+      keywordsToRemove.forEach((key) => {
+        if (schema.hasOwnProperty(key)) {
+          delete schema[key];
+          this.log(`Removed unsupported schema keyword ${key}`);
+        }
+      });
+      return this.walkNestedSchemaObjects(schema, schemaVisitor);
     };
     visitSchemaObjects(this.openapi30, schemaVisitor);
   }

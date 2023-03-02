@@ -58,6 +58,7 @@ describe('resolver test suite', () => {
     }
     done();
   });
+
   test('Convert changes $ref object to JSON Reference', (done) => {
     // const sourceFileName = path.join(__dirname, 'data/root.yaml'); // __dirname is the test dir
     const input = {
@@ -84,6 +85,7 @@ describe('resolver test suite', () => {
     expect(getParam0.description).toBeUndefined();
     done();
   });
+
   test('Convert openIdConnect security', (done) => {
     // const sourceFileName = path.join(__dirname, 'data/root.yaml'); // __dirname is the test dir
     const input = {
@@ -217,6 +219,7 @@ describe('resolver test suite', () => {
   test('Convert schema $ref/examples to example', (done) => {
     // const sourceFileName = path.join(__dirname, 'data/root.yaml'); // __dirname is the test dir
     const input = {
+      openapi: '3.1.0',
       components: {
         schemas: {
           a: {
@@ -240,14 +243,119 @@ describe('resolver test suite', () => {
       const example = a.example;
       expect(example).toEqual('foo');
     }
-    // this test disabled because injection of allOf breaks other
-    // things, so be gets replaced with a simple $ref instead
     {
       const b = converted.components.schemas.b;
       expect(b.examples).toBeUndefined();
       const example = b.example;
       expect(example).toEqual('Foo');
     }
+    done();
+  });
+
+  test('Remove $id and $schema keywords', (done) => {
+    // const sourceFileName = path.join(__dirname, 'data/root.yaml'); // __dirname is the test dir
+    const input = {
+      openapi: '3.1.0',
+      components: {
+        schemas: {
+          a: {
+            $id: 'http://www.example.com/schemas/a',
+            $schema: 'https://json-schema.org/draft/2020-12/schema',
+            type: 'string',
+          },
+        },
+      },
+    };
+    const expected = {
+      openapi: '3.0.3',
+      components: {
+        schemas: {
+          a: {
+            type: 'string',
+          },
+        },
+      },
+    };
+    const converter = new Converter(input, { verbose: true });
+    const converted: any = converter.convert();
+    expect(converted).toEqual(expected);
+    done();
+  });
+
+  test('Remove unevaluatedProperties keywords', (done) => {
+    const input = {
+      openapi: '3.1.0',
+      components: {
+        schemas: {
+          a: {
+            type: 'object',
+            unevaluatedProperties: false,
+            properties: {
+              b: {
+                type: 'object',
+                unevaluatedProperties: false,
+                properties: {
+                  s: {
+                    type: 'string',
+                  },
+                },
+              },
+            },
+          },
+        },
+      },
+    };
+    const expected = {
+      openapi: '3.0.3',
+      components: {
+        schemas: {
+          a: {
+            type: 'object',
+            properties: {
+              b: {
+                type: 'object',
+                properties: {
+                  s: {
+                    type: 'string',
+                  },
+                },
+              },
+            },
+          },
+        },
+      },
+    };
+    const converter = new Converter(input, { verbose: true });
+    const converted: any = converter.convert();
+    expect(converted).toEqual(expected);
+    done();
+  });
+
+  test('nullable type array', (done) => {
+    // const sourceFileName = path.join(__dirname, 'data/root.yaml'); // __dirname is the test dir
+    const input = {
+      components: {
+        schemas: {
+          a: {
+            type: ['string', 'null'],
+          },
+        },
+      },
+    };
+    const expected = {
+      openapi: '3.0.3',
+      components: {
+        schemas: {
+          a: {
+            type: 'string',
+            nullable: true,
+          },
+        },
+      },
+    };
+    const converter = new Converter(input, { verbose: true });
+    const converted: any = converter.convert();
+    expect(converted).toEqual(expected);
     done();
   });
 

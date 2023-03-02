@@ -44,7 +44,9 @@ async function main(args: string[] = process.argv) {
       const format = outputFileName.endsWith('json') ? 'json' : 'yaml';
       const text = format === 'yaml' ? yaml.dump(resolved) : JSON.stringify(resolved, null, 2);
       const outDir = path.dirname(outputFileName);
-      fs.mkdirSync(outDir);
+      if (!fs.existsSync(outDir)) {
+        fs.mkdirSync(outDir, {recursive: true});
+      }
       fs.writeFileSync(outputFileName, text, 'utf8');
     } else {
       const format = sourceFileName.endsWith('json') ? 'json' : 'yaml';

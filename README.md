@@ -232,6 +232,107 @@ components:
           - '1.0.0'
 ```
 
+### Convert type arrays to nullable
+
+If a schema has a type array of exactly two values, and one of them
+is the string `'null'`, the type is converted to the non-null string item,
+and `nullable: true` added to the schema.
+
+For example:
+
+```yaml
+    myResponse:
+      title: My Response
+      description: Response from an API operation
+      type: [ object, 'null' ]
+      allOf:
+        ...
+```
+
+becomes
+
+```yaml
+    myResponse:
+      title: My Response
+      description: Response from an API operation
+      type: object
+      nullable: true
+      allOf:
+        ...
+```
+
+and
+
+```yaml
+    myResponse:
+      title: My Response
+      description: Response from an API operation
+      type: arrray
+      items:
+        type: [ 'string', 'null' ]
+        ...
+```
+
+becomes
+
+```yaml
+    myResponse:
+      title: My Response
+      description: Response from an API operation
+      type: arrray
+      items:
+        type: string
+        nullable: true
+        ...
+```
+
+This transformation does not handle more complex `type` array
+scenarios such as
+
+```yaml
+   type: [ number, string, boolean, 'null']
+```
+
+To support that, the schema would need to be recast using `oneOf`,
+but this is not trivial do to other schema attributes that may
+be possible (`properties`, `allOf` etc.)
+
+(Contributions welcome.)
+
+### Remove `unevaluatedProperties`
+
+The tool removes the `unevaluatedProperties` value, introduced in later
+versions of JSON Schema,
+as this is not supported in OAS 3.0 JSON Schema Draft 7
+used in OAS 3.0.
+
+```yaml
+    myResponse:
+      title: My Response
+      description: Response from an API operation
+      type: object
+      unevaluatedProperties: false
+      allOf:
+        ...
+```
+
+becomes
+
+```yaml
+    myResponse:
+      title: My Response
+      description: Response from an API operation
+      type: object
+      unevaluatedProperties: false
+      allOf:
+        ...
+```
+
+### Remove schema `$id` and `$schema`
+
+The tool removes any `$id` or `$schema` keywords that may appear
+inside schema objects.
+
 ## Unsupported down conversions
 
 * `openapi-down-convert` does not convert `exclusiveMinimum` and `exclusiveMaximum`
