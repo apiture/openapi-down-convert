@@ -79,7 +79,7 @@ Options:
 
 The verbose mode logs the changes to standard error output stream.
 
-The tool only supports local file-based documents, not URLs
+The tool only supports local file-based documents, not URLs.
 Download such files to convert:
 
 ```bash
@@ -167,9 +167,9 @@ mySchema:
 This also applies to the schema used in parameters or in `requestBody` objects
 and in responses.
 
-**Note** This transformation is disabled; it breaks `openapi-generator` 5.4 in
+**Note** This transformation is disabled by default because it breaks `openapi-generator` 5.4 in
 cases where the referenced schema is an array.
-It generates Typescript types for such as
+It generates Typescript types for such cases as
 
 ```typescript
   myProperty: Array | null;
@@ -294,7 +294,7 @@ scenarios such as
 ```
 
 To support that, the schema would need to be recast using `oneOf`,
-but this is not trivial do to other schema attributes that may
+but this is not trivial due to other schema attributes that may
 be possible (`properties`, `allOf` etc.)
 
 (Contributions welcome.)
