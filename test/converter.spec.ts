@@ -331,7 +331,7 @@ describe('resolver test suite', () => {
     done();
   });
 
-  test('nullable type array', (done) => {
+  test('Convert nullable type array', (done) => {
     // const sourceFileName = path.join(__dirname, 'data/root.yaml'); // __dirname is the test dir
     const input = {
       components: {
@@ -447,7 +447,7 @@ describe('resolver test suite', () => {
     done();
   });
 
-  test('remove info.license.identifier', (done) => {
+  test('Remove info.license.identifier', (done) => {
     // const sourceFileName = path.join(__dirname, 'data/root.yaml'); // __dirname is the test dir
     const input = {
       openapi: "3.1.0",
