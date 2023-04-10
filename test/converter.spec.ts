@@ -465,7 +465,7 @@ describe('resolver test suite', () => {
           name: 'MIT'
         },
       },
-    };;
+    };
     const converter = new Converter(input, { verbose: true });
     const converted: any = converter.convert();
     expect(converted).toEqual(expected);
