@@ -331,7 +331,7 @@ describe('resolver test suite', () => {
     done();
   });
 
-  test('nullable type array', (done) => {
+  test('Convert nullable type array', (done) => {
     // const sourceFileName = path.join(__dirname, 'data/root.yaml'); // __dirname is the test dir
     const input = {
       components: {
@@ -444,6 +444,31 @@ describe('resolver test suite', () => {
     {
       expect(converted).toEqual(expected);
     }
+    done();
+  });
+
+  test('Remove info.license.identifier', (done) => {
+    // const sourceFileName = path.join(__dirname, 'data/root.yaml'); // __dirname is the test dir
+    const input = {
+      openapi: "3.1.0",
+      info: {
+        license: {
+          name: 'MIT',
+          identifier: 'MIT'
+        },
+      },
+    };
+    const expected = {
+      openapi: "3.0.3",
+      info: {
+        license: {
+          name: 'MIT'
+        },
+      },
+    };
+    const converter = new Converter(input, { verbose: true });
+    const converted: any = converter.convert();
+    expect(converted).toEqual(expected);
     done();
   });
 
