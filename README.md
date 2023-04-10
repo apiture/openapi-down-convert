@@ -199,7 +199,7 @@ Remove `info.license.identifier`.
 
 ### &DownArrowBar; JSON Schema related changes
 
-OAS 3.0 uses an earlier JSON Schema version (Draft 7). The tool convert `examples`
+OAS 3.0 uses an earlier JSON Schema version (Draft 4). The tool convert `examples`
 in schemas
 to a single `example`.
 
@@ -303,7 +303,7 @@ be possible (`properties`, `allOf` etc.)
 
 The tool removes the `unevaluatedProperties` value, introduced in later
 versions of JSON Schema,
-as this is not supported in OAS 3.0 JSON Schema Draft 7
+as this is not supported in OAS 3.0 JSON Schema Draft 4
 used in OAS 3.0.
 
 ```yaml
@@ -336,8 +336,8 @@ inside schema objects.
 ## Unsupported down conversions
 
 * `openapi-down-convert` does not convert `exclusiveMinimum` and `exclusiveMaximum`
-as defined in JSON Schema 2012-12; these are not supported in JSON Schema Draft 7
-used in OAS 3.0
+as defined in JSON Schema 2012-12; these handled differently in JSON Schema Draft 4
+used in OAS 3.0. Contributions welcome!
 * Webhooks are not addressed. Contributions welcome!
 * The tool only supports self-contained documents. It does not follow or resolve
 external `$ref` documents embedded in the source document.
