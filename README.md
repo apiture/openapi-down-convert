@@ -193,9 +193,9 @@ Other (non-JSON Schema) OAS 3.1 `$ref` objects can have `description` and `summa
 as required by OAS 3.0. (The resulting OpenAPI will use the `description`
 in the `$ref` target.)
 
-### &DownArrowBar; `info.license`
+### &DownArrowBar; `info.license.identifier`
 
-Remove the `info.license` and just retain the `info.termsOfService`
+Remove `info.license.identifier`.
 
 ### &DownArrowBar; JSON Schema related changes
 

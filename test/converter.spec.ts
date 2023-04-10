@@ -447,6 +447,31 @@ describe('resolver test suite', () => {
     done();
   });
 
+  test('remove info.license.identifier', (done) => {
+    // const sourceFileName = path.join(__dirname, 'data/root.yaml'); // __dirname is the test dir
+    const input = {
+      openapi: "3.1.0",
+      info: {
+        license: {
+          name: 'MIT',
+          identifier: 'MIT'
+        },
+      },
+    };
+    const expected = {
+      openapi: "3.0.3",
+      info: {
+        license: {
+          name: 'MIT'
+        },
+      },
+    };;
+    const converter = new Converter(input, { verbose: true });
+    const converted: any = converter.convert();
+    expect(converted).toEqual(expected);
+    done();
+  });
+
   test('Convert larger example', (done) => {
     const sourceFileName = path.join(__dirname, 'data/openapi.yaml'); // __dirname is the test dir
     const scopesFileName = path.join(__dirname, 'data/scopes.yaml');

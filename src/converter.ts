@@ -93,6 +93,7 @@ export class Converter {
   public convert(): object {
     this.log('Converting from OpenAPI 3.1 to 3.0');
     this.openapi30.openapi = '3.0.3';
+    this.removeLicenseIdentifier();
     this.convertSchemaRef();
     this.simplifyNonSchemaRef();
     this.convertSecuritySchemes();
@@ -280,6 +281,13 @@ export class Converter {
         return node;
       }
     });
+  }
+
+  removeLicenseIdentifier() {
+    if ( this.openapi30?.['info']?.['license']?.['identifier'] ) {
+      this.log(`Removed info.license.identifier: ${this.openapi30['info']['license']['identifier']}`);
+      delete this.openapi30['info']['license']['identifier'];
+    }
   }
 
   // This transformation ends up breaking openapi-generator
