@@ -133,6 +133,7 @@ describe('resolver test suite', () => {
     const options: ConverterOptions = {
       authorizationUrl: 'https://www.example.com/test/authorize',
       tokenUrl: 'https://www.example.com/test/token',
+      scopeDescriptionFile: path.join(__dirname, 'data/scopes.yaml'),
     };
     const converter = new Converter(input, options);
     const converted: any = converter.convert();

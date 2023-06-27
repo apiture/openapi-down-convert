@@ -71,7 +71,9 @@ Options:
   --authorizationUrl <authorizationUrl>  The authorizationUrl for openIdConnect -> oauth2 transformation
   --tokenUrl <tokenUrl>                  The tokenUrl for openIdConnect -> oauth2 transformation
   -d, --delete-examples-with-id          If set, delete any JSON Schema examples that have an `id` property
-  -s, --scopes <scopes>                  If set, this JSON/YAML file describes the OpenID scopes
+  --oidc-to-oath2 <scopes>               Convert openIdConnect security to oath2.
+  -s, --scopes <scopes>                  If set, this JSON/YAML file describes the OpenID scopes.
+                                         This is an alias for --oidc-to-oath2
   -v, --verbose                          Verbose output
   -V, --version                          output the version number
   -h, --help                             display help for command
@@ -100,8 +102,10 @@ Change `openapi: 3.1.x` to `openapi: 3.0.3`
 Replace `openIdConnect` security definition with an `oauth2` security requirement
 They are close enough, as far as code generation (such as `openapi-generator`)
 is concerned - it just means an `Authorization: header` must have a valid token.
-Use the options
-to specify the `authorizationUrl` and `tokenUrl` for the
+
+Note: This conversion is only performed if the `--oidc-to-oauth2` option
+(or it's alias, `--scopes`) is supplied.
+Use the other options to specify the `authorizationUrl` and `tokenUrl` for the
 `oauth2` security definition.
 
 TODO: Fetch the openIdConnect connection info and extract the authorization and
@@ -134,9 +138,8 @@ accessToken:
 ```
 
 The tool scans all the `security` objects in all the operations to build
-a list of the used scopes. The descriptions default to `TODO: describe the 'x' scope`
-unless the `--scopes scopes.yaml` option is used; that file can
-list the descriptions for the scopes as simple `scopeName: scope description`
+a list of the used scopes. The descriptions for the scopes should be
+be supplied in the `scopes.yaml`file as simple `scopeName: scope description`
 pairs:
 
 ```yaml
@@ -267,7 +270,7 @@ and
     myResponse:
       title: My Response
       description: Response from an API operation
-      type: arrray
+      type: array
       items:
         type: [ 'string', 'null' ]
         ...
@@ -279,7 +282,7 @@ becomes
     myResponse:
       title: My Response
       description: Response from an API operation
-      type: arrray
+      type: array
       items:
         type: string
         nullable: true
