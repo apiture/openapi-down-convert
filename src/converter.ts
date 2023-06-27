@@ -55,8 +55,12 @@ export class Converter {
   private authorizationUrl: string;
   /** The tokenUrl for openIdConnect -> oauth2 transformation */
   private tokenUrl: string;
-  private scopeDescriptions = {};
+  private scopeDescriptions = undefined;
 
+  /**
+   * Construct a new Converter
+   * @throws Error if the scopeDescriptionFile (if specified) cannot be read or parsed as YAML/JSON
+   */
   constructor(openapiDocument: object, options?: ConverterOptions) {
     this.openapi30 = Converter.deepClone(openapiDocument) as OpenAPI3;
     this.verbose = Boolean(options?.verbose);
@@ -67,18 +71,31 @@ export class Converter {
     this.loadScopeDescriptions(options?.scopeDescriptionFile);
   }
 
-  loadScopeDescriptions(scopeDescriptionFile?: string) {
+  /** Load the scopes.yaml file and save in this.scopeDescriptions
+   * @throws Error if the file cannot be read or parsed as YAML/JSON
+   */
+  private loadScopeDescriptions(scopeDescriptionFile?: string) {
     if (!scopeDescriptionFile) {
       return;
     }
     this.scopeDescriptions = yaml.load(fs.readFileSync(scopeDescriptionFile, 'utf8'));
   }
 
+  /**
+   * Log a message  to console.warn stream if verbose is true
+   * @param message parameters for console.warn
+   */
   private log(...message) {
     if (this.verbose) {
       this.warn(...message);
     }
   }
+
+  /**
+   * Log a message  to console.warn stream. Prefix the message string with `Warning: `
+   * if it does not already have that text.
+   * @param message parameters for console.warn
+   */
   private warn(...message) {
     if (!message[0].startsWith('Warning')) {
       message[0] = `Warning: ${message[0]}`;
@@ -96,7 +113,9 @@ export class Converter {
     this.removeLicenseIdentifier();
     this.convertSchemaRef();
     this.simplifyNonSchemaRef();
-    this.convertSecuritySchemes();
+    if (this.scopeDescriptions) {
+      this.convertSecuritySchemes();
+    }
     this.convertJsonSchemaExamples();
     this.convertConstToEnum();
     this.convertNullableTypeArray();
@@ -284,7 +303,7 @@ export class Converter {
   }
 
   removeLicenseIdentifier() {
-    if ( this.openapi30?.['info']?.['license']?.['identifier'] ) {
+    if (this.openapi30?.['info']?.['license']?.['identifier']) {
       this.log(`Removed info.license.identifier: ${this.openapi30['info']['license']['identifier']}`);
       delete this.openapi30['info']['license']['identifier'];
     }

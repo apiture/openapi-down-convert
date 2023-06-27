@@ -22,7 +22,8 @@ async function main(args: string[] = process.argv) {
     .option('--authorizationUrl <authorizationUrl>', 'The authorizationUrl for openIdConnect -> oauth2 transformation')
     .option('--tokenUrl <tokenUrl>', 'The tokenUrl for openIdConnect -> oauth2 transformation')
     .option('-d, --delete-examples-with-id', 'If set, delete any JSON Schema examples that have an `id` property')
-    .option('-s, --scopes <scopes>', 'If set, this JSON/YAML file describes the OpenID scopes')
+    .option('--oidc-to-oauth2 <scopes>', 'Convert openIdConnect security to oauth2 to allow scope definition')
+    .option('-s, --scopes <scopes>', 'Alias for --oidc-to-oauth2')
     .option('-v, --verbose', 'Verbose output')
     .parse(args);
   const opts = cli.opts();
