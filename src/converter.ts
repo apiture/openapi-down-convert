@@ -117,6 +117,7 @@ export class Converter {
       this.convertSecuritySchemes();
     }
     this.convertJsonSchemaExamples();
+    this.convertJsonSchemaComments();
     this.convertConstToEnum();
     this.convertNullableTypeArray();
     this.removeUnsupportedSchemaKeywords();
@@ -151,6 +152,33 @@ export class Converter {
               }
               // TODO: Add an else here to check example for `id` and delete the example if this.deleteExampleWithId
               // We've put most of those in `examples` so this is probably not needed, but it would be more robust.
+            }
+          } else {
+            schema[key] = walkObject(subSchema, schemaVisitor);
+          }
+        }
+      }
+      return schema;
+    };
+    visitSchemaObjects(this.openapi30, schemaVisitor);
+  }
+
+  /**
+   * OpenAPI 3.1 uses JSON Schema 2020-12 which allows schema `$comment`;
+   * OpenAPI 3.0 uses JSON Scheme Draft 7 does not allow it.
+   * Replace all `$comment` with `x-comment`
+   */
+  convertJsonSchemaComments() {
+    const schemaVisitor: SchemaVisitor = (schema: SchemaObject): SchemaObject => {
+      for (const key in schema) {
+        const subSchema = schema[key];
+        if (subSchema !== null && typeof subSchema === 'object') {
+          if (key === '$comment') {
+            const comment = schema['$comment'];
+            if (comment.length > 0) {
+              delete schema['$comment'];
+              schema['x-comment'] = comment;
+              this.log(`Replaces $comment with x-comment. Comment:\n${comment}`);
             }
           } else {
             schema[key] = walkObject(subSchema, schemaVisitor);

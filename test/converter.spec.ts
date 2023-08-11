@@ -283,6 +283,29 @@ describe('resolver test suite', () => {
     done();
   });
 
+  test('Convert schema $comment to x-comment', (done) => {
+    // const sourceFileName = path.join(__dirname, 'data/root.yaml'); // __dirname is the test dir
+    const input = {
+      components: {
+        schemas: {
+          a: {
+            type: 'string',
+            $comment: 'This is a comment.',
+          }
+        },
+      },
+    };
+    const converter = new Converter(input, {});
+    const converted: any = converter.convert();
+
+    const a = converted.components.schemas.a;
+    expect(a.$comment).toBeUndefined();
+    const comment = a['x-comment'];
+    expect(comment).toEqual('This is a comment.');
+
+    done();
+  });
+
   test('Remove unevaluatedProperties keywords', (done) => {
     const input = {
       openapi: '3.1.0',
