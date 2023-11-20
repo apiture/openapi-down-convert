@@ -170,23 +170,15 @@ export class Converter {
    * Replace all `$comment` with `x-comment`
    */
   convertJsonSchemaComments() {
-    const schemaVisitor: SchemaVisitor = (schema: SchemaObject): SchemaObject => {
-      for (const key in schema) {
-        const subSchema = schema[key];
-        if (subSchema !== null && typeof subSchema === 'object') {
-          if (key === '$comment') {
-            const comment = schema['$comment'];
-            if (comment.length > 0) {
-              delete schema['$comment'];
-              schema['x-comment'] = comment;
-              this.log(`Replaces $comment with x-comment. Comment:\n${comment}`);
-            }
-          } else {
-            schema[key] = walkObject(subSchema, schemaVisitor);
-          }
-        }
+    const schemaVisitor:  SchemaVisitor =
+    (schema: SchemaObject): SchemaObject =>
+    {
+      if (schema.hasOwnProperty('$comment')) {
+        schema['x-comment'] = schema['$comment'];
+        delete schema['$comment'];
+        this.log(`schema $comment renamed to x-comment`);
       }
-      return schema;
+      return this.walkNestedSchemaObjects(schema, schemaVisitor);
     };
     visitSchemaObjects(this.openapi30, schemaVisitor);
   }
