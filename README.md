@@ -302,6 +302,36 @@ be possible (`properties`, `allOf` etc.)
 
 (Contributions welcome.)
 
+### Rename `$comment`
+
+JSON Schema supports a `$comment` value for adding comments to schemas.
+Some JSon shcema tools fail on this keyword. The tool replaces `$comment` with `x-comment`;
+those tools that fail on `$comment` are more forgiving of `x-comment` keywords.
+
+```yaml
+    resourceTitle:
+      title: Resource Title
+      description: A Title for a business object
+      type: string
+      maxLength: 80
+      $comment: >-
+        this maxLength must match the maxLength of 
+        `title` in the `resourcePatch` schema.
+```
+
+becomes
+
+```yaml
+    resourceTitle:
+      title: Resource Title
+      description: A Title for a business object
+      type: string
+      maxLength: 80
+      x-comment: >-
+        this maxLength must match the maxLength of 
+        `title` in the `resourcePatch` schema.
+```
+
 ### Remove `unevaluatedProperties`
 
 The tool removes the `unevaluatedProperties` value, introduced in later
@@ -326,7 +356,6 @@ becomes
       title: My Response
       description: Response from an API operation
       type: object
-      unevaluatedProperties: false
       allOf:
         ...
 ```

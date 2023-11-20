@@ -120,6 +120,7 @@ export class Converter {
     this.convertConstToEnum();
     this.convertNullableTypeArray();
     this.removeUnsupportedSchemaKeywords();
+    this.renameSchema$comment();
     return this.openapi30;
   }
 
@@ -223,6 +224,21 @@ export class Converter {
     };
     visitSchemaObjects(this.openapi30, schemaVisitor);
   }
+
+  renameSchema$comment() {
+    const schemaVisitor:  SchemaVisitor =
+    (schema: SchemaObject): SchemaObject =>
+    {
+      if (schema.hasOwnProperty('$comment')) {
+        schema['x-comment'] = schema['$comment'];
+        delete schema['$comment'];
+        this.log(`schema $comment renamed to x-comment`);
+      }
+      return this.walkNestedSchemaObjects(schema, schemaVisitor);
+    };
+    visitSchemaObjects(this.openapi30, schemaVisitor);
+  }
+
 
   private json(x) {
     return JSON.stringify(x, null, 2);
