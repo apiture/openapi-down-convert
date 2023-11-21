@@ -355,6 +355,90 @@ describe('resolver test suite', () => {
     done();
   });
 
+   test('Remove $id and $schema keywords', (done) => {
+     // const sourceFileName = path.join(__dirname, 'data/root.yaml'); // __dirname is the test dir
+     const input = {
+       openapi: '3.1.0',
+       components: {
+         schemas: {
+           a: {
+             $id: 'http://www.example.com/schemas/a',
+             $schema: 'https://json-schema.org/draft/2020-12/schema',
+             type: 'string',
+           },
+         },
+       },
+     };
+     const expected = {
+       openapi: '3.0.3',
+       components: {
+         schemas: {
+           a: {
+             type: 'string',
+           },
+         },
+       },
+     };
+     const converter = new Converter(input, { verbose: true });
+     const converted: any = converter.convert();
+     expect(converted).toEqual(expected);
+     done();
+   });
+
+   test('Rename $comment to x-comment', (done) => {
+     const input = {
+       openapi: '3.1.0',
+       components: {
+         schemas: {
+           a: {
+             type: 'object',
+             $comment: 'a comment on schema a',
+             properties: {
+               b: {
+                 type: 'object',
+                 $comment: 'A comment on a.b',
+                 properties: {
+                   s: {
+                     type: 'string',
+                     $comment: 'A comment on a.b.s',
+                   },
+                 },
+               },
+             },
+           },
+         },
+       },
+     };
+     const expected = {
+       openapi: '3.0.3',
+       components: {
+         schemas: {
+           a: {
+             type: 'object',
+             'x-comment': 'a comment on schema a',
+             properties: {
+               b: {
+                 type: 'object',
+
+                 'x-comment': 'A comment on a.b',
+                 properties: {
+                   s: {
+                     type: 'string',
+                     'x-comment': 'A comment on a.b.s',
+                   },
+                 },
+               },
+             },
+           },
+         },
+       },
+     };
+     const converter = new Converter(input, { verbose: true });
+     const converted: any = converter.convert();
+     expect(converted).toEqual(expected);
+     done();
+   });
+
   test('Convert nullable type array', (done) => {
     // const sourceFileName = path.join(__dirname, 'data/root.yaml'); // __dirname is the test dir
     const input = {
