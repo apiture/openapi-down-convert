@@ -331,6 +331,40 @@ becomes
         ...
 ```
 
+### Rename `$comment` as `x-comment`
+
+The tool renames the `$comment` keyword in schema objects as `x-comment`
+as `$comment` is not supported in OAS 3.0 JSON Schema Draft 4
+used in OAS 3.0. and can cause problems with some tools.
+`x-comment` is more easily ignored since it does not start with `$`.
+
+For exmample,
+```yaml
+    Problems:
+      title: Problems
+      description: Problem Items
+      type: array
+      maxItems: 1000
+      $comment: >-
+        The value 1000 here must match `maxItems` in the ProblemList schema.
+      items:
+         $ref: '#/components/schemas/apiProblem'
+```
+
+becomes
+
+```yaml
+    Problems:
+      title: Problems
+      description: Problem Items
+      type: array
+      maxItems: 1000
+      x-comment: >-
+        The value 1000 here must match `maxItems` in the ProblemList schema.
+      items:
+         $ref: '#/components/schemas/apiProblem'
+```
+
 ### Remove schema `$id` and `$schema`
 
 The tool removes any `$id` or `$schema` keywords that may appear
