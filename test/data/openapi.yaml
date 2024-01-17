@@ -427,12 +427,31 @@ components:
       format: date-time
       readOnly: true
       example: '2021-10-30T19:06:04.250Z'
-
-    resourceTitle:
-      title: Resource Title
-      description: A Title for a business object
+      $comment: >-
+        minlength is for no milliseconds, such as
+        '2021-10-30T19:06:00Z'
+        maxLength is for '.' plus up to 9 digits for milliseconds,
+        such as '2021-10-30T19:06:04.999000999Z'
+    base64EncodedText:
       type: string
-      maxLength: 80
-      x-comment: >-
-        this maxLength must match the maxLength of
-        `title` in the `resourcePatch` schema.
+      contentEncoding: base64
+    base64EncodedTextWihFormat:
+      type: string
+      format: byte
+      contentEncoding: base64
+    base64EncodedTextWihUnexpectedFormat:
+      type: string
+      format: text
+      contentEncoding: base64
+    binaryEncodedData:
+      type: string
+      contentEncoding: application/octet-stream
+    binaryEncodedDataWIthFormat:
+      type: string
+      format: binary
+      contentEncoding: application/octet-stream
+    binaryEncodedDataWIthUnexpectedFormat:
+      type: string
+      format: base32
+      contentEncoding: application/octet-stream
+

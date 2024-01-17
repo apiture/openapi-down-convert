@@ -45,6 +45,12 @@ export interface ConverterOptions {
    * `{ scope1: "description of scope1", ... }`
    */
   scopeDescriptionFile?: string;
+  /** Earlier versions of the tool converted $comment to x-comment
+   * in JSON Schemas. The tool now deleted $comment values.
+   * Use this option to preserve the conversion and not delete
+   * comments.
+   */
+  convertSchemaComments?: boolean;
 }
 
 export class Converter {
@@ -56,6 +62,7 @@ export class Converter {
   /** The tokenUrl for openIdConnect -> oauth2 transformation */
   private tokenUrl: string;
   private scopeDescriptions = undefined;
+  private convertSchemaComments = false;
 
   /**
    * Construct a new Converter
@@ -69,6 +76,7 @@ export class Converter {
     this.authorizationUrl = options?.authorizationUrl || 'https://www.example.com/oauth2/authorize';
     this.tokenUrl = options?.tokenUrl || 'https://www.example.com/oauth2/token';
     this.loadScopeDescriptions(options?.scopeDescriptionFile);
+    this.convertSchemaComments = options?.convertSchemaComments;
   }
 
   /** Load the scopes.yaml file and save in this.scopeDescriptions
@@ -117,11 +125,17 @@ export class Converter {
       this.convertSecuritySchemes();
     }
     this.convertJsonSchemaExamples();
+    this.convertJsonSchemaContentEncoding();
+    this.convertJsonSchemaContentMediaType();
     this.convertJsonSchemaComments();
     this.convertConstToEnum();
     this.convertNullableTypeArray();
     this.removeUnsupportedSchemaKeywords();
-    this.renameSchema$comment();
+    if (this.convertSchemaComments) {
+      this.renameSchema$comment();
+    } else {
+      this.deleteSchema$comment();
+    }
     return this.openapi30;
   }
 
@@ -170,9 +184,7 @@ export class Converter {
    * Replace all `$comment` with `x-comment`
    */
   convertJsonSchemaComments() {
-    const schemaVisitor:  SchemaVisitor =
-    (schema: SchemaObject): SchemaObject =>
-    {
+    const schemaVisitor: SchemaVisitor = (schema: SchemaObject): SchemaObject => {
       if (schema.hasOwnProperty('$comment')) {
         schema['x-comment'] = schema['$comment'];
         delete schema['$comment'];
@@ -246,9 +258,7 @@ export class Converter {
   }
 
   renameSchema$comment() {
-    const schemaVisitor:  SchemaVisitor =
-    (schema: SchemaObject): SchemaObject =>
-    {
+    const schemaVisitor: SchemaVisitor = (schema: SchemaObject): SchemaObject => {
       if (schema.hasOwnProperty('$comment')) {
         schema['x-comment'] = schema['$comment'];
         delete schema['$comment'];
@@ -259,6 +269,100 @@ export class Converter {
     visitSchemaObjects(this.openapi30, schemaVisitor);
   }
 
+  private deleteSchema$comment() {
+    const schemaVisitor: SchemaVisitor = (schema: SchemaObject): SchemaObject => {
+      if (schema.hasOwnProperty('$comment')) {
+        const comment = schema['$comment'];
+        delete schema['$comment'];
+        this.log(`schema $comment deleted: ${comment}`);
+      }
+      return this.walkNestedSchemaObjects(schema, schemaVisitor);
+    };
+    visitSchemaObjects(this.openapi30, schemaVisitor);
+  }
+
+  /**
+   * Convert
+   * ```
+   * contentMediaType: 'application/octet-string'
+   * ```
+   * to
+   * ```
+   * format: binary
+   * ```
+   * in `type: string` schemas.
+   * Warn if schema has a `format` already and it is not `binary`.
+   */
+  convertJsonSchemaContentMediaType() {{
+    const schemaVisitor: SchemaVisitor = (schema: SchemaObject): SchemaObject => {
+      if (
+        schema.hasOwnProperty('type') &&
+        schema['type'] === 'string' &&
+        schema.hasOwnProperty('contentMediaType') &&
+        schema['contentMediaType'] === 'application/octet-string'
+      ) {
+        if (schema.hasOwnProperty('format')) {
+          if (schema['format'] === 'binary') {
+             this.log(`Deleted schema contentMediaType: application/octet-string (leaving format: binary)`);
+             delete schema['contentMediaType'];
+          } else {
+            this.warn(
+              `Could not convert schema contentMediaType: application/octet-string to format: binary because the schema already has a format (${schema['format']})`,
+          );
+          }
+        } else {
+          delete schema['contentMediaType'];
+          schema['format'] = 'binary'
+          this.log(`Converted schema contentMediaType: application/octet-string to format: binary`);
+        }
+      }
+      return this.walkNestedSchemaObjects(schema, schemaVisitor);
+    };
+    visitSchemaObjects(this.openapi30, schemaVisitor);
+  }
+  }
+
+  /**
+   * Convert
+   * ```
+   * contentEncoding: base64
+   * ```
+   * to
+   * ```
+   * format: byte
+   * ```
+   * in `type: string` schemas. Warn if schema has a `format` already.
+   * and it is not `byte`
+   */
+  convertJsonSchemaContentEncoding() {
+    const schemaVisitor: SchemaVisitor = (schema: SchemaObject): SchemaObject => {
+      if (schema.hasOwnProperty('type') &&
+          schema['type'] === 'string' &&
+          schema.hasOwnProperty('contentEncoding')
+          ) {
+        if (schema['contentEncoding'] === 'base64') {
+          if (schema.hasOwnProperty('format')) {
+            if (schema['format'] === 'byte') {
+              this.log(`Deleted schema contentEncoding: base64 (leaving format: byte)`);
+              delete schema['contentEncoding'];
+            } else {
+              this.warn(
+                `Could not convert schema contentEncoding: base64 to format: byte because the schema already has a format (${schema['format']})`,
+              );
+            }
+          } else {
+            delete schema['contentEncoding'];
+            schema['format'] = 'byte';
+             this.log(` converted schema: contentEncoding: base64 to format: byte`);
+          }
+      } else {
+        this.warn(`Unable to down-convert contentEncoding: ${schema['contentEncoding']}`)
+      }
+      return this.walkNestedSchemaObjects(schema, schemaVisitor);
+    }
+  }
+    visitSchemaObjects(this.openapi30, schemaVisitor);
+  }
 
   private json(x) {
     return JSON.stringify(x, null, 2);

@@ -170,8 +170,8 @@ mySchema:
 This also applies to the schema used in parameters or in `requestBody` objects
 and in responses.
 
-**Note** This transformation is disabled by default because it breaks `openapi-generator` 5.4 in
-cases where the referenced schema is an array.
+**Note** This transformation is disabled by default because it breaks
+`openapi-generator` 5.4 in cases where the referenced schema is an array.
 It generates Typescript types for such cases as
 
 ```typescript
@@ -223,7 +223,7 @@ components:
         const: '1.0.0'
 ```
 
- becomes
+becomes
 
 ```yaml
 components:
@@ -235,7 +235,7 @@ components:
           - '1.0.0'
 ```
 
-### Convert type arrays to nullable
+### &DownArrowBar; Convert type arrays to nullable
 
 If a schema has a type array of exactly two values, and one of them
 is the string `'null'`, the type is converted to the non-null string item,
@@ -302,11 +302,11 @@ be possible (`properties`, `allOf` etc.)
 
 (Contributions welcome.)
 
-### Remove `unevaluatedProperties`
+### &DownArrowBar; Remove `unevaluatedProperties`
 
 The tool removes the `unevaluatedProperties` value, introduced in later
 versions of JSON Schema,
-as this is not supported in OAS 3.0 JSON Schema Draft 4
+as this is not supported in JSON Schema Draft 4
 used in OAS 3.0.
 
 ```yaml
@@ -331,16 +331,92 @@ becomes
         ...
 ```
 
-### Remove schema `$id` and `$schema`
+### &DownArrowBar; Remove schema `$id` and `$schema`
 
 The tool removes any `$id` or `$schema` keywords that may appear
 inside schema objects.
 
+### &DownArrowBar; Convert `$comment` to `x-comment`
+
+JSON Schema introduced `$comment` in schemas in 2020-12.
+Since OAS 3.0 uses JSON Schema Draft 4, and some tools
+will flag `$comment` as invalid, this tool removes these comments.
+
+An earlier version of the tool comverted `$comment` to `x-comment`
+However, other tools which do not allow `$comment` may not not support
+`x-comment`
+
+use the `--convert-schema-comments` option or set
+`ConverterOptions.convertSchemaComments`
+to `true`
+in the `Converter` constructor
+to requst conversion of 
+`$comment` to `x-comment` rather than deleting `$comment`.
+
+### Convert `contentEncoding: base64` to `format: byte`
+
+JSON Schema Draft 7 uses `contentEncoding` to specify
+[the encoding of non-JSON string content]
+(https://json-schema.org/understanding-json-schema/reference/non_json_data).
+Draft 7 supports `format: byte`.
+
+This tool converts `type: string` schemas as follows:
+
+<!-- markdownlint-disable MD033 -->
+<table>
+
+<tr>
+<th>OAS 3.1 schema</th>
+<th>OAS 3.0 schema</th>
+</tr>
+
+<tr>
+<td>
+<pre>
+type: string
+contentEncoding: base64
+</pre>
+</td>
+<td>
+<pre>
+type: string
+format: byte
+</pre>
+</td>
+</tr>
+
+<tr>
+<td>
+<pre>
+type: string
+contentMediaType: 'application/octet-string'
+</pre>
+</td>
+<td>
+<pre>
+type: string
+format: binary
+</pre>
+</td>
+</tr>
+</table>
+
+
 ## Unsupported down conversions
 
+The tool does not support the following situations.
+Contributions welcome!
+
 * `openapi-down-convert` does not convert `exclusiveMinimum` and `exclusiveMaximum`
-as defined in JSON Schema 2012-12; these handled differently in JSON Schema Draft 4
-used in OAS 3.0. Contributions welcome!
-* Webhooks are not addressed. Contributions welcome!
+  as defined in JSON Schema 2012-12; these handled differently in JSON Schema Draft 4
+  used in OAS 3.0.
+* Webhooks are not addressed.
 * The tool only supports self-contained documents. It does not follow or resolve
-external `$ref` documents embedded in the source document.
+  external `$ref` documents embedded in the source document.
+* Request body and response body `content` object transformations, such as
+  reversing `content: { 'application/octet-stream': {} }`
+  described in [Migrating from OpenAPI 3.0 to 3.1.0](https://www.openapis.org/blog/2021/02/16/migrating-from-openapi-3-0-to-3-1-0)
+* Converting other `contentEncoding` values (`7bit`, `8bit`, `binary`,
+  `quoted-printable`, `base16`, `base32`) (Note: `contentEncoding: base64` is supported by
+  converting to `format: byte` as listed above.)
+* Converting `contentMediaType: 'type/subtype` to `media: { type: 'type/subtype'}` for non-JSON data.

@@ -433,6 +433,57 @@ describe('resolver test suite', () => {
          },
        },
      };
+     const converter = new Converter(input, { verbose: true, convertSchemaComments: true });
+     const converted: any = converter.convert();
+     expect(converted).toEqual(expected);
+     done();
+   });
+
+
+   test('Delete $comment (not convert to x-comment)', (done) => {
+     const input = {
+       openapi: '3.1.0',
+       components: {
+         schemas: {
+           a: {
+             type: 'object',
+             $comment: 'a comment on schema a',
+             properties: {
+               b: {
+                 type: 'object',
+                 $comment: 'A comment on a.b',
+                 properties: {
+                   s: {
+                     type: 'string',
+                     $comment: 'A comment on a.b.s',
+                   },
+                 },
+               },
+             },
+           },
+         },
+       },
+     };
+     const expected = {
+       openapi: '3.0.3',
+       components: {
+         schemas: {
+           a: {
+             type: 'object',
+             properties: {
+               b: {
+                 type: 'object',
+                 properties: {
+                   s: {
+                     type: 'string'
+                   },
+                 },
+               },
+             },
+           },
+         },
+       },
+     };
      const converter = new Converter(input, { verbose: true });
      const converted: any = converter.convert();
      expect(converted).toEqual(expected);
