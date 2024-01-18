@@ -127,7 +127,6 @@ export class Converter {
     this.convertJsonSchemaExamples();
     this.convertJsonSchemaContentEncoding();
     this.convertJsonSchemaContentMediaType();
-    this.convertJsonSchemaComments();
     this.convertConstToEnum();
     this.convertNullableTypeArray();
     this.removeUnsupportedSchemaKeywords();
@@ -174,23 +173,6 @@ export class Converter {
         }
       }
       return schema;
-    };
-    visitSchemaObjects(this.openapi30, schemaVisitor);
-  }
-
-  /**
-   * OpenAPI 3.1 uses JSON Schema 2020-12 which allows schema `$comment`;
-   * OpenAPI 3.0 uses JSON Scheme Draft 7 does not allow it.
-   * Replace all `$comment` with `x-comment`
-   */
-  convertJsonSchemaComments() {
-    const schemaVisitor: SchemaVisitor = (schema: SchemaObject): SchemaObject => {
-      if (schema.hasOwnProperty('$comment')) {
-        schema['x-comment'] = schema['$comment'];
-        delete schema['$comment'];
-        this.log(`schema $comment renamed to x-comment`);
-      }
-      return this.walkNestedSchemaObjects(schema, schemaVisitor);
     };
     visitSchemaObjects(this.openapi30, schemaVisitor);
   }
@@ -293,7 +275,7 @@ export class Converter {
    * in `type: string` schemas.
    * Warn if schema has a `format` already and it is not `binary`.
    */
-  convertJsonSchemaContentMediaType() {{
+  convertJsonSchemaContentMediaType() {
     const schemaVisitor: SchemaVisitor = (schema: SchemaObject): SchemaObject => {
       if (
         schema.hasOwnProperty('type') &&
@@ -319,7 +301,6 @@ export class Converter {
       return this.walkNestedSchemaObjects(schema, schemaVisitor);
     };
     visitSchemaObjects(this.openapi30, schemaVisitor);
-  }
   }
 
   /**
@@ -358,8 +339,8 @@ export class Converter {
       } else {
         this.warn(`Unable to down-convert contentEncoding: ${schema['contentEncoding']}`)
       }
-      return this.walkNestedSchemaObjects(schema, schemaVisitor);
     }
+    return this.walkNestedSchemaObjects(schema, schemaVisitor);
   }
     visitSchemaObjects(this.openapi30, schemaVisitor);
   }

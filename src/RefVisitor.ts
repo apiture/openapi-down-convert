@@ -62,7 +62,8 @@ export function visitSchemaObjects(node: any, schemaCallback: SchemaVisitor): an
       if (schemas != null && typeof schemas === 'object') {
         for (const schemaName in schemas) {
           const schema = schemas[schemaName];
-          schemas[schemaName] = schemaCallback(schema);
+          const newSchema = schemaCallback(schema);
+          schemas[schemaName] = newSchema;
         }
       }
     }

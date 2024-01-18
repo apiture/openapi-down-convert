@@ -295,7 +295,7 @@ describe('resolver test suite', () => {
         },
       },
     };
-    const converter = new Converter(input, {});
+    const converter = new Converter(input, {convertSchemaComments: true});
     const converted: any = converter.convert();
 
     const a = converted.components.schemas.a;
@@ -438,7 +438,6 @@ describe('resolver test suite', () => {
      expect(converted).toEqual(expected);
      done();
    });
-
 
    test('Delete $comment (not convert to x-comment)', (done) => {
      const input = {
