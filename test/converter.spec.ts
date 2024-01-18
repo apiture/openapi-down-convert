@@ -1,4 +1,4 @@
-/* eslint-disable prefer-destructuring */
+/*eslint-disable prefer-destructuring */
 /* eslint-disable @typescript-eslint/no-explicit-any */
 
 import { describe, expect, test } from '@jest/globals';
@@ -291,11 +291,11 @@ describe('resolver test suite', () => {
           a: {
             type: 'string',
             $comment: 'This is a comment.',
-          }
+          },
         },
       },
     };
-    const converter = new Converter(input, {convertSchemaComments: true});
+    const converter = new Converter(input, { convertSchemaComments: true });
     const converted: any = converter.convert();
 
     const a = converted.components.schemas.a;
@@ -355,139 +355,139 @@ describe('resolver test suite', () => {
     done();
   });
 
-   test('Remove $id and $schema keywords', (done) => {
-     // const sourceFileName = path.join(__dirname, 'data/root.yaml'); // __dirname is the test dir
-     const input = {
-       openapi: '3.1.0',
-       components: {
-         schemas: {
-           a: {
-             $id: 'http://www.example.com/schemas/a',
-             $schema: 'https://json-schema.org/draft/2020-12/schema',
-             type: 'string',
-           },
-         },
-       },
-     };
-     const expected = {
-       openapi: '3.0.3',
-       components: {
-         schemas: {
-           a: {
-             type: 'string',
-           },
-         },
-       },
-     };
-     const converter = new Converter(input, { verbose: true });
-     const converted: any = converter.convert();
-     expect(converted).toEqual(expected);
-     done();
-   });
+  test('Remove $id and $schema keywords', (done) => {
+    // const sourceFileName = path.join(__dirname, 'data/root.yaml'); // __dirname is the test dir
+    const input = {
+      openapi: '3.1.0',
+      components: {
+        schemas: {
+          a: {
+            $id: 'http://www.example.com/schemas/a',
+            $schema: 'https://json-schema.org/draft/2020-12/schema',
+            type: 'string',
+          },
+        },
+      },
+    };
+    const expected = {
+      openapi: '3.0.3',
+      components: {
+        schemas: {
+          a: {
+            type: 'string',
+          },
+        },
+      },
+    };
+    const converter = new Converter(input, { verbose: true });
+    const converted: any = converter.convert();
+    expect(converted).toEqual(expected);
+    done();
+  });
 
-   test('Rename $comment to x-comment', (done) => {
-     const input = {
-       openapi: '3.1.0',
-       components: {
-         schemas: {
-           a: {
-             type: 'object',
-             $comment: 'a comment on schema a',
-             properties: {
-               b: {
-                 type: 'object',
-                 $comment: 'A comment on a.b',
-                 properties: {
-                   s: {
-                     type: 'string',
-                     $comment: 'A comment on a.b.s',
-                   },
-                 },
-               },
-             },
-           },
-         },
-       },
-     };
-     const expected = {
-       openapi: '3.0.3',
-       components: {
-         schemas: {
-           a: {
-             type: 'object',
-             'x-comment': 'a comment on schema a',
-             properties: {
-               b: {
-                 type: 'object',
+  test('Rename $comment to x-comment', (done) => {
+    const input = {
+      openapi: '3.1.0',
+      components: {
+        schemas: {
+          a: {
+            type: 'object',
+            $comment: 'a comment on schema a',
+            properties: {
+              b: {
+                type: 'object',
+                $comment: 'A comment on a.b',
+                properties: {
+                  s: {
+                    type: 'string',
+                    $comment: 'A comment on a.b.s',
+                  },
+                },
+              },
+            },
+          },
+        },
+      },
+    };
+    const expected = {
+      openapi: '3.0.3',
+      components: {
+        schemas: {
+          a: {
+            type: 'object',
+            'x-comment': 'a comment on schema a',
+            properties: {
+              b: {
+                type: 'object',
 
-                 'x-comment': 'A comment on a.b',
-                 properties: {
-                   s: {
-                     type: 'string',
-                     'x-comment': 'A comment on a.b.s',
-                   },
-                 },
-               },
-             },
-           },
-         },
-       },
-     };
-     const converter = new Converter(input, { verbose: true, convertSchemaComments: true });
-     const converted: any = converter.convert();
-     expect(converted).toEqual(expected);
-     done();
-   });
+                'x-comment': 'A comment on a.b',
+                properties: {
+                  s: {
+                    type: 'string',
+                    'x-comment': 'A comment on a.b.s',
+                  },
+                },
+              },
+            },
+          },
+        },
+      },
+    };
+    const converter = new Converter(input, { verbose: true, convertSchemaComments: true });
+    const converted: any = converter.convert();
+    expect(converted).toEqual(expected);
+    done();
+  });
 
-   test('Delete $comment (not convert to x-comment)', (done) => {
-     const input = {
-       openapi: '3.1.0',
-       components: {
-         schemas: {
-           a: {
-             type: 'object',
-             $comment: 'a comment on schema a',
-             properties: {
-               b: {
-                 type: 'object',
-                 $comment: 'A comment on a.b',
-                 properties: {
-                   s: {
-                     type: 'string',
-                     $comment: 'A comment on a.b.s',
-                   },
-                 },
-               },
-             },
-           },
-         },
-       },
-     };
-     const expected = {
-       openapi: '3.0.3',
-       components: {
-         schemas: {
-           a: {
-             type: 'object',
-             properties: {
-               b: {
-                 type: 'object',
-                 properties: {
-                   s: {
-                     type: 'string'
-                   },
-                 },
-               },
-             },
-           },
-         },
-       },
-     };
-     const converter = new Converter(input, { verbose: true });
-     const converted: any = converter.convert();
-     expect(converted).toEqual(expected);
-     done();
-   });
+  test('Delete $comment (not convert to x-comment)', (done) => {
+    const input = {
+      openapi: '3.1.0',
+      components: {
+        schemas: {
+          a: {
+            type: 'object',
+            $comment: 'a comment on schema a',
+            properties: {
+              b: {
+                type: 'object',
+                $comment: 'A comment on a.b',
+                properties: {
+                  s: {
+                    type: 'string',
+                    $comment: 'A comment on a.b.s',
+                  },
+                },
+              },
+            },
+          },
+        },
+      },
+    };
+    const expected = {
+      openapi: '3.0.3',
+      components: {
+        schemas: {
+          a: {
+            type: 'object',
+            properties: {
+              b: {
+                type: 'object',
+                properties: {
+                  s: {
+                    type: 'string',
+                  },
+                },
+              },
+            },
+          },
+        },
+      },
+    };
+    const converter = new Converter(input, { verbose: true });
+    const converted: any = converter.convert();
+    expect(converted).toEqual(expected);
+    done();
+  });
 
   test('Convert nullable type array', (done) => {
     // const sourceFileName = path.join(__dirname, 'data/root.yaml'); // __dirname is the test dir
@@ -608,19 +608,19 @@ describe('resolver test suite', () => {
   test('Remove info.license.identifier', (done) => {
     // const sourceFileName = path.join(__dirname, 'data/root.yaml'); // __dirname is the test dir
     const input = {
-      openapi: "3.1.0",
+      openapi: '3.1.0',
       info: {
         license: {
           name: 'MIT',
-          identifier: 'MIT'
+          identifier: 'MIT',
         },
       },
     };
     const expected = {
-      openapi: "3.0.3",
+      openapi: '3.0.3',
       info: {
         license: {
-          name: 'MIT'
+          name: 'MIT',
         },
       },
     };
@@ -649,3 +649,191 @@ describe('resolver test suite', () => {
     done();
   });
 });
+
+test('binary encoded data with existing binary format', (done) => {
+  const input = {
+    openapi: '3.1.0',
+    components: {
+      schemas: {
+        binaryEncodedDataWithExistingBinaryFormat: {
+          type: 'string',
+          format: 'binary',
+          contentEncoding: 'base64',
+        },
+      },
+    },
+  };
+  const expected = {
+    openapi: '3.0.3',
+    components: {
+      schemas: {
+        binaryEncodedDataWithExistingBinaryFormat: {
+          type: 'string',
+          format: 'binary',
+          contentEncoding: 'base64',
+        },
+      },
+    },
+  };
+  const converter = new Converter(input);
+  const converted: any = converter.convert();
+  expect(converted).toEqual(expected);
+  // TODO how to check that Converter logged to console.warn ?
+  done();
+});
+
+test('binary encoded data with byte format', (done) => {
+  // const sourceFileName = path.join(__dirname, 'data/root.yaml'); // __dirname is the test dir
+  const input = {
+    openapi: '3.1.0',
+    components: {
+      schemas: {
+        binaryEncodedDataWithByteFormat: {
+          type: 'string',
+          format: 'byte',
+          contentEncoding: 'base64',
+        },
+      },
+    },
+  };
+  const expected = {
+    openapi: '3.0.3',
+    components: {
+      schemas: {
+        binaryEncodedDataWithByteFormat: {
+          type: 'string',
+          format: 'byte',
+        },
+      },
+    },
+  };
+  const converter = new Converter(input);
+  const converted: any = converter.convert();
+  expect(converted).toEqual(expected);
+  done();
+});
+
+test('binary encoded data with no existing format', (done) => {
+  // const sourceFileName = path.join(__dirname, 'data/root.yaml'); // __dirname is the test dir
+  const input = {
+    openapi: '3.1.0',
+    components: {
+      schemas: {
+        binaryEncodedDataWithNoFormat: {
+          type: 'string',
+          contentEncoding: 'base64',
+        },
+      },
+    },
+  };
+  const expected = {
+    openapi: '3.0.3',
+    components: {
+      schemas: {
+        binaryEncodedDataWithNoFormat: {
+          type: 'string',
+          format: 'byte',
+        },
+      },
+    },
+  };
+  const converter = new Converter(input);
+  const converted: any = converter.convert();
+  expect(converted).toEqual(expected);
+  done();
+});
+
+test('contentMediaType with existing binary format', (done) => {
+  const input = {
+    openapi: '3.1.0',
+    components: {
+      schemas: {
+        binaryEncodedDataWithExistingBinaryFormat: {
+          type: 'string',
+          contentMediaType: 'application/octet-stream',
+          format: 'binary'
+        },
+      },
+    },
+  };
+  const expected = {
+    openapi: '3.0.3',
+    components: {
+      schemas: {
+        binaryEncodedDataWithExistingBinaryFormat: {
+          type: 'string',
+          format: 'binary',
+        },
+      },
+    },
+  };
+  const converter = new Converter(input);
+  const converted: any = converter.convert();
+  expect(converted).toEqual(expected);
+  // TODO how to check that Converter logged to console.warn ?
+  done();
+});
+
+
+test('contentMediaType with no existing format', (done) => {
+  const input = {
+    openapi: '3.1.0',
+    components: {
+      schemas: {
+        binaryEncodedDataWithExistingBinaryFormat: {
+          type: 'string',
+          contentMediaType: 'application/octet-stream',
+        },
+      },
+    },
+  };
+  const expected = {
+    openapi: '3.0.3',
+    components: {
+      schemas: {
+        binaryEncodedDataWithExistingBinaryFormat: {
+          type: 'string',
+          format: 'binary',
+        },
+      },
+    },
+  };
+  const converter = new Converter(input);
+  const converted: any = converter.convert();
+  expect(converted).toEqual(expected);
+  // TODO how to check that Converter logged to console.warn ?
+  done();
+});
+
+test('contentMediaType with existing unexpected format', (done) => {
+  const input = {
+    openapi: '3.1.0',
+    components: {
+      schemas: {
+        binaryEncodedDataWithExistingBinaryFormat: {
+          type: 'string',
+          contentMediaType: 'application/octet-stream',
+          format: 'byte'
+        },
+      },
+    },
+  };
+  const expected = {
+    openapi: '3.0.3',
+    components: {
+      schemas: {
+        binaryEncodedDataWithExistingBinaryFormat: {
+          type: 'string',
+          contentMediaType: 'application/octet-stream',
+          format: 'byte'
+        },
+      },
+    },
+  };
+  const converter = new Converter(input);
+  const converted: any = converter.convert();
+  expect(converted).toEqual(expected);
+  // TODO how to check that Converter logged to console.warn ?
+  done();
+});
+

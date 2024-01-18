@@ -266,7 +266,7 @@ export class Converter {
   /**
    * Convert
    * ```
-   * contentMediaType: 'application/octet-string'
+   * contentMediaType: 'application/octet-stream'
    * ```
    * to
    * ```
@@ -281,21 +281,21 @@ export class Converter {
         schema.hasOwnProperty('type') &&
         schema['type'] === 'string' &&
         schema.hasOwnProperty('contentMediaType') &&
-        schema['contentMediaType'] === 'application/octet-string'
+        schema['contentMediaType'] === 'application/octet-stream'
       ) {
         if (schema.hasOwnProperty('format')) {
           if (schema['format'] === 'binary') {
-             this.log(`Deleted schema contentMediaType: application/octet-string (leaving format: binary)`);
+             this.log(`Deleted schema contentMediaType: application/octet-stream (leaving format: binary)`);
              delete schema['contentMediaType'];
           } else {
             this.warn(
-              `Could not convert schema contentMediaType: application/octet-string to format: binary because the schema already has a format (${schema['format']})`,
+              `Could not convert schema contentMediaType: application/octet-stream to format: binary because the schema already has a format (${schema['format']})`,
           );
           }
         } else {
           delete schema['contentMediaType'];
           schema['format'] = 'binary'
-          this.log(`Converted schema contentMediaType: application/octet-string to format: binary`);
+          this.log(`Converted schema contentMediaType: application/octet-stream to format: binary`);
         }
       }
       return this.walkNestedSchemaObjects(schema, schemaVisitor);

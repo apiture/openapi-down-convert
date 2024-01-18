@@ -350,7 +350,7 @@ use the `--convert-schema-comments` option or set
 `ConverterOptions.convertSchemaComments`
 to `true`
 in the `Converter` constructor
-to requst conversion of 
+to requst conversion of
 `$comment` to `x-comment` rather than deleting `$comment`.
 
 ### Convert `contentEncoding: base64` to `format: byte`
@@ -389,7 +389,7 @@ format: byte
 <td>
 <pre>
 type: string
-contentMediaType: 'application/octet-string'
+contentMediaType: 'application/octet-stream'
 </pre>
 </td>
 <td>
