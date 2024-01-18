@@ -149,8 +149,9 @@ export class Converter {
     } else {
       this.deleteSchema$comment();
     }
-    if (this.returnCode > 0)
+    if (this.returnCode > 0) {
       throw new Error('Cannot down convert this OpenAPI definition.');
+    }
     return this.openapi30;
   }
 
