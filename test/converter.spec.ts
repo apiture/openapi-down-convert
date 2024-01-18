@@ -663,22 +663,15 @@ test('binary encoded data with existing binary format', (done) => {
       },
     },
   };
-  const expected = {
-    openapi: '3.0.3',
-    components: {
-      schemas: {
-        binaryEncodedDataWithExistingBinaryFormat: {
-          type: 'string',
-          format: 'binary',
-          contentEncoding: 'base64',
-        },
-      },
-    },
-  };
   const converter = new Converter(input);
-  const converted: any = converter.convert();
-  expect(converted).toEqual(expected);
-  // TODO how to check that Converter logged to console.warn ?
+  let caught = false;
+  try {
+      converter.convert();
+  } catch (e) {
+    caught = true;
+  }
+  expect(caught).toBeTruthy()
+  // TODO how to check that Converter logged a specific note?
   done();
 });
 
@@ -818,21 +811,15 @@ test('contentMediaType with existing unexpected format', (done) => {
       },
     },
   };
-  const expected = {
-    openapi: '3.0.3',
-    components: {
-      schemas: {
-        binaryEncodedDataWithExistingBinaryFormat: {
-          type: 'string',
-          contentMediaType: 'application/octet-stream',
-          format: 'byte'
-        },
-      },
-    },
-  };
-  const converter = new Converter(input);
-  const converted: any = converter.convert();
-  expect(converted).toEqual(expected);
+
+   const converter = new Converter(input);
+   let caught = false;
+   try {
+     converter.convert();
+   } catch (e) {
+     caught = true;
+   }
+   expect(caught).toBeTruthy();
   // TODO how to check that Converter logged to console.warn ?
   done();
 });

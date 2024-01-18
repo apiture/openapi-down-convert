@@ -72,6 +72,9 @@ Options:
   --tokenUrl <tokenUrl>                  The tokenUrl for openIdConnect -> oauth2 transformation
   -d, --delete-examples-with-id          If set, delete any JSON Schema examples that have an `id` property
   --oidc-to-oath2 <scopes>               Convert openIdConnect security to oath2.
+  --convertJsonComments                  if used, convert `$comment` in JSON schemas
+                                         to `x-comment`. I omitted, simply delete
+                                         all `$comment` in JSON schemas.
   -s, --scopes <scopes>                  If set, this JSON/YAML file describes the OpenID scopes.
                                          This is an alias for --oidc-to-oath2
   -v, --verbose                          Verbose output
@@ -79,7 +82,13 @@ Options:
   -h, --help                             display help for command
 ```
 
-The verbose mode logs the changes to standard error output stream.
+The verbose mode logs all changes to standard error output stream.
+
+The tool returns a 0 status code upon success or a non-zero status code
+if it finds constructs that cannot be down-converted, such as
+using `contentMediaType: application/octet-stream` with a `format`
+other than `binary`, or if a schema has `contentEncoding: base64`
+and has an existing `format` that is not already `base64`.
 
 The tool only supports local file-based documents, not URLs.
 Download such files to convert:
@@ -342,12 +351,12 @@ JSON Schema introduced `$comment` in schemas in 2020-12.
 Since OAS 3.0 uses JSON Schema Draft 4, and some tools
 will flag `$comment` as invalid, this tool removes these comments.
 
-An earlier version of the tool comverted `$comment` to `x-comment`
+An earlier version of the tool converted `$comment` to `x-comment`
 However, other tools which do not allow `$comment` may not not support
-`x-comment`
+`x-comment` either.
 
-use the `--convert-schema-comments` option or set
-`ConverterOptions.convertSchemaComments`
+Use the `--convert-schema-comments` CLI option or set
+`convertSchemaComments`
 to `true`
 in the `Converter` constructor
 to requst conversion of
@@ -355,10 +364,10 @@ to requst conversion of
 
 ### Convert `contentEncoding: base64` to `format: byte`
 
-JSON Schema Draft 7 uses `contentEncoding` to specify
+JSON Schema Draft 7 and later uses `contentEncoding` to specify
 [the encoding of non-JSON string content]
 (https://json-schema.org/understanding-json-schema/reference/non_json_data).
-Draft 7 supports `format: byte`.
+Draft 4 supports `format: byte` for `Base64` encoded strings.
 
 This tool converts `type: string` schemas as follows:
 
@@ -369,7 +378,7 @@ This tool converts `type: string` schemas as follows:
 <th>OAS 3.1 schema</th>
 <th>OAS 3.0 schema</th>
 </tr>
-
+2
 <tr>
 <td>
 <pre>

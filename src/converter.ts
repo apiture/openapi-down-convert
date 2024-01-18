@@ -63,6 +63,7 @@ export class Converter {
   private tokenUrl: string;
   private scopeDescriptions = undefined;
   private convertSchemaComments = false;
+  private returnCode = 0;
 
   /**
    * Construct a new Converter
@@ -112,6 +113,19 @@ export class Converter {
   }
 
   /**
+   * Log an rror message to console.error stream. Prefix the message string with `Error: `
+   * if it does not already have that text. Increments the `returnCode`.
+   * @param message parameters for console.warn
+   */
+  private error(...message) {
+    if (!message[0].startsWith('Error')) {
+      message[0] = `Error: ${message[0]}`;
+    }
+    this.returnCode++;
+    console.error(...message);
+  }
+
+  /**
    * Convert the OpenAPI document to 3.0
    * @returns the converted document. The input is not modified.
    */
@@ -135,6 +149,8 @@ export class Converter {
     } else {
       this.deleteSchema$comment();
     }
+    if (this.returnCode > 0)
+      throw new Error('Cannot down convert this OpenAPI definition.');
     return this.openapi30;
   }
 
@@ -285,16 +301,16 @@ export class Converter {
       ) {
         if (schema.hasOwnProperty('format')) {
           if (schema['format'] === 'binary') {
-             this.log(`Deleted schema contentMediaType: application/octet-stream (leaving format: binary)`);
-             delete schema['contentMediaType'];
+            this.log(`Deleted schema contentMediaType: application/octet-stream (leaving format: binary)`);
+            delete schema['contentMediaType'];
           } else {
-            this.warn(
-              `Could not convert schema contentMediaType: application/octet-stream to format: binary because the schema already has a format (${schema['format']})`,
-          );
+            this.error(
+              `Unable to down-convert schema with contentMediaType: application/octet-stream to format: binary because the schema already has a format (${schema['format']})`,
+            );
           }
         } else {
           delete schema['contentMediaType'];
-          schema['format'] = 'binary'
+          schema['format'] = 'binary';
           this.log(`Converted schema contentMediaType: application/octet-stream to format: binary`);
         }
       }
@@ -317,31 +333,28 @@ export class Converter {
    */
   convertJsonSchemaContentEncoding() {
     const schemaVisitor: SchemaVisitor = (schema: SchemaObject): SchemaObject => {
-      if (schema.hasOwnProperty('type') &&
-          schema['type'] === 'string' &&
-          schema.hasOwnProperty('contentEncoding')
-          ) {
+      if (schema.hasOwnProperty('type') && schema['type'] === 'string' && schema.hasOwnProperty('contentEncoding')) {
         if (schema['contentEncoding'] === 'base64') {
           if (schema.hasOwnProperty('format')) {
             if (schema['format'] === 'byte') {
               this.log(`Deleted schema contentEncoding: base64 (leaving format: byte)`);
               delete schema['contentEncoding'];
             } else {
-              this.warn(
-                `Could not convert schema contentEncoding: base64 to format: byte because the schema already has a format (${schema['format']})`,
+              this.error(
+                `Unable to down-convert schema contentEncoding: base64 to format: byte because the schema already has a format (${schema['format']})`,
               );
             }
           } else {
             delete schema['contentEncoding'];
             schema['format'] = 'byte';
-             this.log(` converted schema: contentEncoding: base64 to format: byte`);
+            this.log(` converted schema: contentEncoding: base64 to format: byte`);
           }
-      } else {
-        this.warn(`Unable to down-convert contentEncoding: ${schema['contentEncoding']}`)
+        } else {
+          this.error(`Unable to down-convert contentEncoding: ${schema['contentEncoding']}`);
+        }
       }
-    }
-    return this.walkNestedSchemaObjects(schema, schemaVisitor);
-  }
+      return this.walkNestedSchemaObjects(schema, schemaVisitor);
+    };
     visitSchemaObjects(this.openapi30, schemaVisitor);
   }
 
