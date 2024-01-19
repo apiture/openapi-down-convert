@@ -342,8 +342,6 @@ becomes
         ...
 ```
 
-### &DownArrowBar; Remove schema `$id` and `$schema`
-
 The tool removes any `$id` or `$schema` keywords that may appear
 inside schema objects.
 
@@ -358,11 +356,38 @@ However, other tools which do not allow `$comment` may not not support
 `x-comment` either.
 
 Use the `--convert-schema-comments` CLI option or set
-`convertSchemaComments`
-to `true`
-in the `Converter` constructor
+`convertSchemaComments` to `true`
+in the `Converter` constructor options
 to requst conversion of
 `$comment` to `x-comment` rather than deleting `$comment`.
+
+For example,
+
+```yaml
+    Problems:
+      title: Problems
+      description: Problem Items
+      type: array
+      maxItems: 1000
+      $comment: >-
+        The value 1000 here must match `maxItems` in the ProblemList schema.
+      items:
+         $ref: '#/components/schemas/apiProblem'
+```
+
+becomes
+
+```yaml
+    Problems:
+      title: Problems
+      description: Problem Items
+      type: array
+      maxItems: 1000
+      x-comment: >-
+        The value 1000 here must match `maxItems` in the ProblemList schema.
+      items:
+         $ref: '#/components/schemas/apiProblem'
+```
 
 ### Convert `contentEncoding: base64` to `format: byte`
 
