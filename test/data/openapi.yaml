@@ -427,12 +427,8 @@ components:
       format: date-time
       readOnly: true
       example: '2021-10-30T19:06:04.250Z'
-
-    resourceTitle:
-      title: Resource Title
-      description: A Title for a business object
-      type: string
-      maxLength: 80
-      x-comment: >-
-        this maxLength must match the maxLength of
-        `title` in the `resourcePatch` schema.
+      $comment: >-
+        minlength is for no milliseconds, such as
+        '2021-10-30T19:06:00Z'
+        maxLength is for '.' plus up to 9 digits for milliseconds,
+        such as '2021-10-30T19:06:04.999000999Z'

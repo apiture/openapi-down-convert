@@ -72,6 +72,11 @@ Options:
   --tokenUrl <tokenUrl>                  The tokenUrl for openIdConnect -> oauth2 transformation
   -d, --delete-examples-with-id          If set, delete any JSON Schema examples that have an `id` property
   --oidc-to-oath2 <scopes>               Convert openIdConnect security to oath2.
+  --convertJsonComments                  If used, convert `$comment` in JSON schemas
+                                         to `x-comment`. If omitted, delete
+                                         all `$comment` in JSON schemas.
+                                         (Use `--verbose` to log deletion
+                                         to stdout)
   -s, --scopes <scopes>                  If set, this JSON/YAML file describes the OpenID scopes.
                                          This is an alias for --oidc-to-oath2
   -v, --verbose                          Verbose output
@@ -79,7 +84,13 @@ Options:
   -h, --help                             display help for command
 ```
 
-The verbose mode logs the changes to standard error output stream.
+The verbose mode logs all changes to standard error output stream.
+
+The tool returns a 0 status code upon success or a non-zero status code
+if it finds constructs that cannot be down-converted, such as
+using `contentMediaType: application/octet-stream` with a `format`
+other than `binary`, or if a schema has `contentEncoding: base64`
+and has an existing `format` that is not already `base64`.
 
 The tool only supports local file-based documents, not URLs.
 Download such files to convert:
@@ -170,8 +181,8 @@ mySchema:
 This also applies to the schema used in parameters or in `requestBody` objects
 and in responses.
 
-**Note** This transformation is disabled by default because it breaks `openapi-generator` 5.4 in
-cases where the referenced schema is an array.
+**Note** This transformation is disabled by default because it breaks
+`openapi-generator` 5.4 in cases where the referenced schema is an array.
 It generates Typescript types for such cases as
 
 ```typescript
@@ -223,7 +234,7 @@ components:
         const: '1.0.0'
 ```
 
- becomes
+becomes
 
 ```yaml
 components:
@@ -235,7 +246,7 @@ components:
           - '1.0.0'
 ```
 
-### Convert type arrays to nullable
+### &DownArrowBar; Convert type arrays to nullable
 
 If a schema has a type array of exactly two values, and one of them
 is the string `'null'`, the type is converted to the non-null string item,
@@ -302,11 +313,11 @@ be possible (`properties`, `allOf` etc.)
 
 (Contributions welcome.)
 
-### Remove `unevaluatedProperties`
+### &DownArrowBar; Remove `unevaluatedProperties`
 
 The tool removes the `unevaluatedProperties` value, introduced in later
 versions of JSON Schema,
-as this is not supported in OAS 3.0 JSON Schema Draft 4
+as this is not supported in JSON Schema Draft 4
 used in OAS 3.0.
 
 ```yaml
@@ -331,14 +342,27 @@ becomes
         ...
 ```
 
-### Rename `$comment` as `x-comment`
+The tool removes any `$id` or `$schema` keywords that may appear
+inside schema objects.
 
-The tool renames the `$comment` keyword in schema objects as `x-comment`
-as `$comment` is not supported in OAS 3.0 JSON Schema Draft 4
-used in OAS 3.0. and can cause problems with some tools.
-`x-comment` is more easily ignored since it does not start with `$`.
+### &DownArrowBar; Convert `$comment` to `x-comment`
 
-For exmample,
+JSON Schema introduced `$comment` in schemas in 2020-12.
+Since OAS 3.0 uses JSON Schema Draft 4, and some tools
+will flag `$comment` as invalid, this tool removes these comments.
+
+An earlier version of the tool converted `$comment` to `x-comment`
+However, other tools which do not allow `$comment` may not not support
+`x-comment` either.
+
+Use the `--convert-schema-comments` CLI option or set
+`convertSchemaComments` to `true`
+in the `Converter` constructor options
+to requst conversion of
+`$comment` to `x-comment` rather than deleting `$comment`.
+
+For example,
+
 ```yaml
     Problems:
       title: Problems
@@ -365,16 +389,70 @@ becomes
          $ref: '#/components/schemas/apiProblem'
 ```
 
-### Remove schema `$id` and `$schema`
+### Convert `contentEncoding: base64` to `format: byte`
 
-The tool removes any `$id` or `$schema` keywords that may appear
-inside schema objects.
+JSON Schema Draft 7 and later uses `contentEncoding` to specify
+[the encoding of non-JSON string content]
+(https://json-schema.org/understanding-json-schema/reference/non_json_data).
+Draft 4 supports `format: byte` for `Base64` encoded strings.
+
+This tool converts `type: string` schemas as follows:
+
+<!-- markdownlint-disable MD033 -->
+<table>
+
+<tr>
+<th>OAS 3.1 schema</th>
+<th>OAS 3.0 schema</th>
+</tr>
+2
+<tr>
+<td>
+<pre>
+type: string
+contentEncoding: base64
+</pre>
+</td>
+<td>
+<pre>
+type: string
+format: byte
+</pre>
+</td>
+</tr>
+
+<tr>
+<td>
+<pre>
+type: string
+contentMediaType: 'application/octet-stream'
+</pre>
+</td>
+<td>
+<pre>
+type: string
+format: binary
+</pre>
+</td>
+</tr>
+</table>
+
 
 ## Unsupported down conversions
 
+Currently, the tool does not support the following situations.
+Contributions welcome!
+
 * `openapi-down-convert` does not convert `exclusiveMinimum` and `exclusiveMaximum`
-as defined in JSON Schema 2012-12; these handled differently in JSON Schema Draft 4
-used in OAS 3.0. Contributions welcome!
-* Webhooks are not addressed. Contributions welcome!
+  as defined in JSON Schema 2012-12; these handled differently in JSON Schema Draft 4
+  used in OAS 3.0.
+* Webhooks are not addressed.
 * The tool only supports self-contained documents. It does not follow or resolve
-external `$ref` documents embedded in the source document.
+  external `$ref` documents embedded in the source document.
+* Request body and response body `content` object transformations, such as
+  reversing `content: { 'application/octet-stream': {} }` as
+  described in [Migrating from OpenAPI 3.0 to 3.1.0](https://www.openapis.org/blog/2021/02/16/migrating-from-openapi-3-0-to-3-1-0)
+* Converting other `contentEncoding` values (`7bit`, `8bit`, `binary`,
+  `quoted-printable`, `base16`, `base32`) (Note: `contentEncoding: base64` is supported by
+  converting to `format: byte` as listed above.)
+* Converting `contentMediaType: 'type/subtype` to `media: { type: 'type/subtype'}` for non-JSON data.

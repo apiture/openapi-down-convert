@@ -25,6 +25,7 @@ async function main(args: string[] = process.argv) {
     .option('--oidc-to-oauth2 <scopes>', 'Convert openIdConnect security to oauth2 to allow scope definition')
     .option('-s, --scopes <scopes>', 'Alias for --oidc-to-oauth2')
     .option('-v, --verbose', 'Verbose output')
+    .option('--convert-schema-comments', 'Convert $comment to x-comment instead of deleting $comment values')
     .parse(args);
   const opts = cli.opts();
   const sourceFileName: string = opts.input || 'openapi.yaml';
@@ -37,6 +38,7 @@ async function main(args: string[] = process.argv) {
     authorizationUrl: opts.authorizationUrl,
     tokenUrl: opts.tokenUrl,
     scopeDescriptionFile: opts.scopes,
+    convertSchemaComments: opts.convertSchemaComments,
   };
   const converter = new Converter(source, cOpts);
   try {
