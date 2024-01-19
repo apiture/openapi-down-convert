@@ -72,9 +72,11 @@ Options:
   --tokenUrl <tokenUrl>                  The tokenUrl for openIdConnect -> oauth2 transformation
   -d, --delete-examples-with-id          If set, delete any JSON Schema examples that have an `id` property
   --oidc-to-oath2 <scopes>               Convert openIdConnect security to oath2.
-  --convertJsonComments                  if used, convert `$comment` in JSON schemas
-                                         to `x-comment`. I omitted, simply delete
+  --convertJsonComments                  If used, convert `$comment` in JSON schemas
+                                         to `x-comment`. If omitted, delete
                                          all `$comment` in JSON schemas.
+                                         (Use `--verbose` to log deletion
+                                         to stdout)
   -s, --scopes <scopes>                  If set, this JSON/YAML file describes the OpenID scopes.
                                          This is an alias for --oidc-to-oath2
   -v, --verbose                          Verbose output
@@ -413,7 +415,7 @@ format: binary
 
 ## Unsupported down conversions
 
-The tool does not support the following situations.
+Curretnly, the tool does not support the following situations.
 Contributions welcome!
 
 * `openapi-down-convert` does not convert `exclusiveMinimum` and `exclusiveMaximum`
@@ -423,7 +425,7 @@ Contributions welcome!
 * The tool only supports self-contained documents. It does not follow or resolve
   external `$ref` documents embedded in the source document.
 * Request body and response body `content` object transformations, such as
-  reversing `content: { 'application/octet-stream': {} }`
+  reversing `content: { 'application/octet-stream': {} }` as
   described in [Migrating from OpenAPI 3.0 to 3.1.0](https://www.openapis.org/blog/2021/02/16/migrating-from-openapi-3-0-to-3-1-0)
 * Converting other `contentEncoding` values (`7bit`, `8bit`, `binary`,
   `quoted-printable`, `base16`, `base32`) (Note: `contentEncoding: base64` is supported by

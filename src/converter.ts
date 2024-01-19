@@ -113,9 +113,10 @@ export class Converter {
   }
 
   /**
-   * Log an rror message to console.error stream. Prefix the message string with `Error: `
-   * if it does not already have that text. Increments the `returnCode`.
-   * @param message parameters for console.warn
+   * Log an error message to `console.error` stream. Prefix the message string with `Error: `
+   * if it does not already start with `'Error'`. Increments the `returnCode`, causing
+   * the CLI to throw an Error when done.
+   * @param message parameters for `console.error`
    */
   private error(...message) {
     if (!message[0].startsWith('Error')) {
@@ -329,8 +330,8 @@ export class Converter {
    * ```
    * format: byte
    * ```
-   * in `type: string` schemas. Warn if schema has a `format` already.
-   * and it is not `byte`
+   * in `type: string` schemas. It is an error if the schema has a `format` already
+   * and it is not `byte`.
    */
   convertJsonSchemaContentEncoding() {
     const schemaVisitor: SchemaVisitor = (schema: SchemaObject): SchemaObject => {
@@ -348,7 +349,7 @@ export class Converter {
           } else {
             delete schema['contentEncoding'];
             schema['format'] = 'byte';
-            this.log(` converted schema: contentEncoding: base64 to format: byte`);
+            this.log(`Converted schema: 'contentEncoding: base64' to 'format: byte'`);
           }
         } else {
           this.error(`Unable to down-convert contentEncoding: ${schema['contentEncoding']}`);
