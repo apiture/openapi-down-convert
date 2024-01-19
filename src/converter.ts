@@ -46,7 +46,7 @@ export interface ConverterOptions {
    */
   scopeDescriptionFile?: string;
   /** Earlier versions of the tool converted $comment to x-comment
-   * in JSON Schemas. The tool now deleted $comment values.
+   * in JSON Schemas. The tool now deletes $comment values by default.
    * Use this option to preserve the conversion and not delete
    * comments.
    */

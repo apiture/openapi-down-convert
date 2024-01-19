@@ -440,7 +440,7 @@ format: binary
 
 ## Unsupported down conversions
 
-Curretnly, the tool does not support the following situations.
+Currently, the tool does not support the following situations.
 Contributions welcome!
 
 * `openapi-down-convert` does not convert `exclusiveMinimum` and `exclusiveMaximum`
