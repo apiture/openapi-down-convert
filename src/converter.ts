@@ -144,6 +144,7 @@ export class Converter {
     this.convertJsonSchemaContentMediaType();
     this.convertConstToEnum();
     this.convertNullableTypeArray();
+    this.removeWebhooksObject();
     this.removeUnsupportedSchemaKeywords();
     if (this.convertSchemaComments) {
       this.renameSchema$comment();
@@ -243,6 +244,12 @@ export class Converter {
     visitSchemaObjects(this.openapi30, schemaVisitor);
   }
 
+  removeWebhooksObject() {
+    if (Object.hasOwnProperty.call(this.openapi30, 'webhooks')) {
+      this.log(`Deleted webhooks object`);
+      delete this.openapi30['webhooks'];
+    }
+  }
   removeUnsupportedSchemaKeywords() {
     const keywordsToRemove = ['$id', '$schema', 'unevaluatedProperties'];
     const schemaVisitor: SchemaVisitor = (schema: SchemaObject): SchemaObject => {

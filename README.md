@@ -211,6 +211,10 @@ in the `$ref` target.)
 
 Remove `info.license.identifier`.
 
+### &DownArrowBar; `webhooks`
+
+Remove the `webhooks` object, if present.
+
 ### &DownArrowBar; JSON Schema related changes
 
 OAS 3.0 uses an earlier JSON Schema version (Draft 4). The tool convert `examples`
