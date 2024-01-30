@@ -2,7 +2,7 @@
   "compilerOptions": {
     "module": "commonjs",
     "target": "ES2018",
-    "lib" : ["ES2020"],
+    "lib" : ["ES2020", "DOM"],
     "outDir": "./lib",
     "moduleResolution": "node",
     "removeComments": true,
@@ -10,7 +10,8 @@
     "noUnusedLocals": true,
     "skipLibCheck": true,
     "resolveJsonModule": true,
-    "declaration": true
+    "declaration": true,
+    "types" : [ "node" ]
   },
   "include": ["src/**/*"],
   "exclude": ["node_modules", "lib"],

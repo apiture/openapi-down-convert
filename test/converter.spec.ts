@@ -355,6 +355,43 @@ describe('resolver test suite', () => {
     done();
   });
 
+
+   test('Remove webhooks object', (done) => {
+    const input = {
+      openapi: '3.1.0',
+        webhooks: {
+          newThing: {
+            post: {
+              requestBody: {
+                description: 'Information about a new thing in the system',
+                content: {
+                  'application/json': {
+                    schema: {
+                      $ref: '#/components/schemas/newThing'
+                    }
+                  }
+                }
+              },
+              responses: {
+                200: {
+                  description: 'Return a 200 status to indicate that the data was received successfully'
+                }
+              }
+            }
+          }
+        }
+    };
+
+    const expected = {
+      openapi: '3.0.3'
+    };
+
+    const converter = new Converter(input, { verbose: true });
+    const converted: any = converter.convert();
+    expect(converted).toEqual(expected);
+    done();
+  });
+
   test('Remove $id and $schema keywords', (done) => {
     // const sourceFileName = path.join(__dirname, 'data/root.yaml'); // __dirname is the test dir
     const input = {
