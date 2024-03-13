@@ -355,6 +355,47 @@ describe('resolver test suite', () => {
     done();
   });
 
+  test('Remove contentMediaType keywords', (done) => {
+    const input = {
+      openapi: '3.1.0',
+      components: {
+        schemas: {
+          a: {
+            type: 'object',
+            unevaluatedProperties: false,
+            properties: {
+              b: {
+                type: 'string',
+                contentMediaType: 'application/pdf',
+                maxLength: 5000000
+              },
+            },
+          },
+        },
+      },
+    };
+    const expected = {
+      openapi: '3.0.3',
+      components: {
+        schemas: {
+          a: {
+            type: 'object',
+            properties: {
+              b: {
+                type: 'string',
+                maxLength: 5000000
+              },
+            },
+          },
+        },
+      },
+    };
+    const converter = new Converter(input, { verbose: true });
+    const converted: any = converter.convert();
+    expect(converted).toEqual(expected);
+    done();
+  });
+
 
    test('Remove webhooks object', (done) => {
     const input = {
