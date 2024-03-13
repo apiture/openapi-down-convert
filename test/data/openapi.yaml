@@ -63,6 +63,12 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/preferences'
+            application/pdf:
+              schema:
+                type: string
+                contentMediaType: application/json
+                contentEncoding: base64
+                maxLength: 5000000
         '400':
           $ref: '#/components/responses/400'
         '401':
