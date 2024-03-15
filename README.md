@@ -217,9 +217,8 @@ Remove the `webhooks` object, if present.
 
 ### &DownArrowBar; JSON Schema related changes
 
-OAS 3.0 uses an earlier JSON Schema version (Draft 4). The tool convert `examples`
-in schemas
-to a single `example`.
+OAS 3.0 uses an earlier JSON Schema version (Draft 7). The tool converts `examples`
+in schemas to a single `example`.
 
 As a special case, if the resulting `example` includes an `id`, it is
 deleted if the `--delete-examples-with-id` CLI option is set.
@@ -321,7 +320,7 @@ be possible (`properties`, `allOf` etc.)
 
 The tool removes the `unevaluatedProperties` value, introduced in later
 versions of JSON Schema,
-as this is not supported in JSON Schema Draft 4
+as this is not supported in OAS 3.0 JSON Schema Draft 7
 used in OAS 3.0.
 
 ```yaml
@@ -447,10 +446,14 @@ format: binary
 Currently, the tool does not support the following situations.
 Contributions welcome!
 
-* `openapi-down-convert` does not convert `exclusiveMinimum` and `exclusiveMaximum`
-  as defined in JSON Schema 2012-12; these handled differently in JSON Schema Draft 4
-  used in OAS 3.0.
-* Webhooks are not addressed.
+* `openapi-down-convert` does not convert
+  `exclusiveMinimum` and
+  `exclusiveMaximum`,
+  `unevaluatedProperties`,
+  `patternProperties`
+  as defined in JSON Schema 2012-12; these are not supported in JSON Schema Draft 7
+  used in OAS 3.0
+* Webhooks are not removed. Contributions welcome!
 * The tool only supports self-contained documents. It does not follow or resolve
   external `$ref` documents embedded in the source document.
 * Request body and response body `content` object transformations, such as
