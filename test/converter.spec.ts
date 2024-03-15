@@ -355,6 +355,55 @@ describe('resolver test suite', () => {
     done();
   });
 
+
+  test('Remove patternProperties keywords', (done) => {
+    const input = {
+      openapi: '3.1.0',
+      components: {
+        schemas: {
+          a: {
+            type: 'object',
+            properties: {
+                  s: {
+                    type: 'string',
+                  },
+            },
+            patternProperties: {
+            "^[a-z{2}-[A-Z]{2,3}]$": {
+                type: 'object',
+                unevaluatedProperties: false,
+                properties: {
+                  t: {
+                    type: 'string',
+                  },
+                },
+              },
+            },
+          },
+        },
+      },
+    };
+    const expected = {
+      openapi: '3.0.3',
+      components: {
+        schemas: {
+          a: {
+            type: 'object',
+            properties: {
+              s: {
+                type: 'string',
+              },
+            },
+          },
+        },
+      },
+    };
+    const converter = new Converter(input, { verbose: true });
+    const converted: any = converter.convert();
+    expect(converted).toEqual(expected);
+    done();
+  });
+
   test('Remove contentMediaType keywords', (done) => {
     const input = {
       openapi: '3.1.0',
