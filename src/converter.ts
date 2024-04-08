@@ -12,6 +12,8 @@ import {
   JsonNode,
   RefObject,
   SchemaObject,
+  isRef,
+  getRefSchema,
 } from './RefVisitor';
 
 /** Lightweight OAS document top-level fields */
@@ -144,6 +146,7 @@ export class Converter {
     this.convertJsonSchemaContentMediaType();
     this.convertConstToEnum();
     this.convertNullableTypeArray();
+    this.convertMergedNullableType();
     this.removeWebhooksObject();
     this.removeUnsupportedSchemaKeywords();
     if (this.convertSchemaComments) {
@@ -239,6 +242,70 @@ export class Converter {
           this.log(`Converted schema type array to nullable`);
         }
       }
+      return this.walkNestedSchemaObjects(schema, schemaVisitor);
+    };
+    visitSchemaObjects(this.openapi30, schemaVisitor);
+  }
+
+  /**
+   * Converts `type: null` merged with other types via anyOf/oneOf to `nullable: true`
+   */
+  convertMergedNullableType() {
+    const schemaVisitor: SchemaVisitor = (schema: SchemaObject): SchemaObject => {
+      const nullableOf = ['anyOf', 'oneOf'] as const;
+
+      nullableOf.forEach((of) => {
+        if (!schema[of]) {
+          return;
+        }
+
+        const entries = schema[of];
+
+        if (!Array.isArray(entries)) {
+          return;
+        }
+
+        const typeNullIndex = entries.findIndex((v) => {
+          if (!v) {
+            return false;
+          }
+          return v.hasOwnProperty('type') && v['type'] === 'null';
+        });
+
+        let isNullable = typeNullIndex > -1;
+
+        // Get the main type of the root object. nullable can't exist with the type property in 3.0.3.
+        const mainType = entries.reduce((acc, cur) => {
+          const sub = isRef(cur) ? getRefSchema(this.openapi30, cur) : cur;
+
+          if (sub['type']) {
+            // if our sub-type...type has null in it, it's still nullable
+            if (Array.isArray(sub['type'])) {
+              if (sub['type'].includes('null')) {
+                isNullable = true;
+              }
+              // return the first non-null type. multiple unrelated types aren't
+              // currently supported.
+              return sub['type'].filter((_) => _ !== 'null')[0];
+            }
+            // only set non null types
+            if (sub['type'] !== 'null') {
+              return sub['type'];
+            }
+          }
+          return acc;
+        }, null);
+
+        if (isNullable) {
+          // has a type: null entry in the array
+          schema['nullable'] = true;
+          schema['type'] = mainType;
+          if (typeNullIndex > -1) {
+            schema[of].splice(typeNullIndex, 1);
+          }
+        }
+      });
+
       return this.walkNestedSchemaObjects(schema, schemaVisitor);
     };
     visitSchemaObjects(this.openapi30, schemaVisitor);
