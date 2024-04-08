@@ -126,3 +126,20 @@ export function walkObject(node: object, objectCallback: ObjectVisitor): JsonNod
     return array;
   }
 }
+
+/**
+ * Loads the schema/component located at $ref
+ */
+export function getRefSchema(node: object, ref: RefObject) {
+  const propertyName = ref.$ref.split('/').reverse()[0];
+  if (node.hasOwnProperty('components')) {
+    const components = node['components'];
+    if (components != null && typeof components === 'object' && components.hasOwnProperty('schemas')) {
+      const schemas = components['schemas'];
+      if (schemas.hasOwnProperty(propertyName)) {
+        return schemas[propertyName];
+      }
+    }
+  }
+  return null;
+}
