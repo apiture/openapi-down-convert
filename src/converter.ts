@@ -303,6 +303,14 @@ export class Converter {
           if (typeNullIndex > -1) {
             schema[of].splice(typeNullIndex, 1);
           }
+
+          if (entries.length === 1) {
+            // if only one entry, anyOf/oneOf probably shouldn't be used.
+            // Instead, convert to allOf with nullable & ref
+            schema['allOf'] = [schema[of][0]];
+
+            delete schema[of];
+          }
         }
       });
 
