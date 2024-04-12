@@ -667,7 +667,7 @@ describe('resolver test suite', () => {
       components: {
         schemas: {
           a: {
-            anyOf: [
+            allOf: [
               {
                 $ref: '#/components/b',
               },
