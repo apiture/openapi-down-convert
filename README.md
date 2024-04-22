@@ -217,7 +217,8 @@ Remove the `webhooks` object, if present.
 
 ### &DownArrowBar; JSON Schema related changes
 
-OAS 3.0 uses an earlier JSON Schema version (Draft 7). The tool converts `examples`
+OAS 3.0 uses an earlier JSON Schema version
+([JSON Schema Specification Wright Draft 00](https://datatracker.ietf.org/doc/html/draft-wright-json-schema-00)). The tool converts `examples`
 in schemas to a single `example`.
 
 As a special case, if the resulting `example` includes an `id`, it is
