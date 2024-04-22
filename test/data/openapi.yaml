@@ -18,6 +18,8 @@ tags:
     description: Application Preferences
 paths:
   /users/{appId}/preferences:
+    summary: Application preferences
+    description: A user's preferences for an application
     parameters:
       - $ref: '#/components/parameters/appIdPathParam'
     get:
