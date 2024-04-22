@@ -385,7 +385,7 @@ export class Converter {
       for (const path in paths) {
         // filter out path.{$ref, summary, description, parameters, servers} and x-* specification extensions
         const methods = Object.keys(paths[path]).filter((op) => Converter.METHODS.includes(op));
-        for (const method in methods) {
+        methods.forEach(method => {
           const operation = paths[path][method];
           const sec = (operation?.security || []) as object[];
           sec.forEach((s) => {
@@ -396,7 +396,7 @@ export class Converter {
               });
             }
           });
-        }
+        });
       }
       return scopes;
     };

@@ -94,7 +94,7 @@ paths:
             - scope2
             - scope3
             - scope4
-  /users/{appId}/open-preferences:
+  /users/{appId}/public-preferences:
     parameters:
       - $ref: '#/components/parameters/appIdPathParam'
     get:
