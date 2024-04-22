@@ -773,6 +773,8 @@ describe('resolver test suite', () => {
     const scopes = converted.components.securitySchemes.accessToken.flows.authorizationCode.scopes;
     expect(scopes['scope1']).toEqual('Allow the application to access your personal profile data.');
     expect(scopes['scope3']).toEqual(`TODO: describe the 'scope3' scope`);
+    const unauthOp = (converted.paths['/users/{appId}/open-preferences'] as object)['get'];
+    expect(unauthOp['security']).toBeFalsy();
     done();
   });
 });
@@ -950,4 +952,3 @@ test('contentMediaType with existing unexpected format', (done) => {
   // TODO how to check that Converter logged to console.warn ?
   done();
 });
-

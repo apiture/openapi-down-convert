@@ -388,7 +388,7 @@ export class Converter {
             continue;
           }
           const operation = paths[path][op];
-          const sec = operation?.security as object[];
+          const sec = (operation?.security || []) as object[];
           sec.forEach((s) => {
             const requirement = s?.[schemeName] as string[];
             if (requirement) {
