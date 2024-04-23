@@ -370,7 +370,8 @@ export class Converter {
   private json(x) {
     return JSON.stringify(x, null, 2);
   }
-  static readonly METHODS = ['delete', 'get', 'head', 'options', 'patch', 'post', 'put', 'trace' ];
+  /** HTTP methods */
+  static readonly HTTP_METHODS = ['delete', 'get', 'head', 'options', 'patch', 'post', 'put', 'trace' ];
   /**
    * OpenAPI 3.1 defines a new `openIdConnect` security scheme.
    * Down-convert the scheme to `oauth2` / authorization code flow.
@@ -384,7 +385,7 @@ export class Converter {
       const paths = this.openapi30?.paths;
       for (const path in paths) {
         // filter out path.{$ref, summary, description, parameters, servers} and x-* specification extensions
-        const methods = Object.keys(paths[path]).filter((op) => Converter.METHODS.includes(op));
+        const methods = Object.keys(paths[path]).filter((op) => Converter.HTTP_METHODS.includes(op));
         methods.forEach(method => {
           const operation = paths[path][method];
           const sec = (operation?.security || []) as object[];
