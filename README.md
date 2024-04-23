@@ -341,7 +341,6 @@ becomes
       title: My Response
       description: Response from an API operation
       type: object
-      unevaluatedProperties: false
       allOf:
         ...
 ```
