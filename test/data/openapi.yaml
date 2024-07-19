@@ -1,6 +1,6 @@
 openapi: 3.1.0
 info:
-  title: Transactions
+  title: Application Preferences (Example OpenAPI)
   description: ...
   version: 0.1.2
   contact:
@@ -18,10 +18,12 @@ tags:
     description: Application Preferences
 paths:
   /users/{appId}/preferences:
+    summary: Application preferences
+    description: A user's preferences for an application
     parameters:
       - $ref: '#/components/parameters/appIdPathParam'
     get:
-      summary: Return preferences for a application
+      summary: Return preferences for an application
       description: ...
       operationId: listPreferences
       tags:
@@ -66,7 +68,7 @@ paths:
             application/pdf:
               schema:
                 type: string
-                contentMediaType: application/json
+                contentMediaType: application/pdf
                 contentEncoding: base64
                 maxLength: 5000000
         '400':
@@ -92,6 +94,58 @@ paths:
             - scope2
             - scope3
             - scope4
+  /users/{appId}/public-preferences:
+    parameters:
+      - $ref: '#/components/parameters/appIdPathParam'
+    get:
+      summary: Return public preferences for an application, without auth
+      description: ...
+      operationId: listPublicPreferences
+      tags:
+        - Preferences
+      parameters:
+        - name: categories
+          description: >-
+            Filter preferences to only those whose `category` is in this
+            pipe-separated list.
+          in: query
+          style: pipeDelimited
+          schema:
+            type: array
+            minItems: 1
+            maxItems: 16
+            examples:
+              - - Presentation
+              - - Presentation
+                - Notifications
+            items:
+              type: string
+        - name: type
+          description: >-
+            Filter preferences only those whose `type` is in this pipe-separated
+            list.
+          in: query
+          style: pipeDelimited
+          schema:
+            type: array
+            minItems: 1
+            maxItems: 4
+            uniqueItems: true
+            items:
+              type: string
+      responses:
+        '200':
+          description: OK.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/preferences'
+            application/pdf:
+              schema:
+                type: string
+                contentMediaType: application/pdf
+                contentEncoding: base64
+                maxLength: 5000000
 components:
   securitySchemes:
     accessToken:
