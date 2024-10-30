@@ -131,8 +131,9 @@ export function walkObject(node: object, objectCallback: ObjectVisitor): JsonNod
  * Loads the schema/component located at $ref
  */
 export function getRefSchema(node: object, ref: RefObject) {
-  const propertyName = ref.$ref.split('/').reverse()[0];
-  if (node.hasOwnProperty('components')) {
+  const split = ref.$ref.split('/');
+  if (split[0] === '#' && split[1] === 'components' && split[2] === 'schemas' && node.hasOwnProperty('components')) {
+    const propertyName = split[3];
     const components = node['components'];
     if (components != null && typeof components === 'object' && components.hasOwnProperty('schemas')) {
       const schemas = components['schemas'];

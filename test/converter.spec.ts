@@ -649,7 +649,7 @@ describe('resolver test suite', () => {
           a: {
             anyOf: [
               {
-                $ref: '#/components/b',
+                $ref: '#/components/schemas/b',
               },
               {
                 type: 'null',
@@ -669,10 +669,9 @@ describe('resolver test suite', () => {
           a: {
             allOf: [
               {
-                $ref: '#/components/b',
+                $ref: '#/components/schemas/b',
               },
             ],
-            type: 'string',
             nullable: true,
           },
           b: {
@@ -695,10 +694,10 @@ describe('resolver test suite', () => {
           a: {
             oneOf: [
               {
-                $ref: '#/components/b',
+                $ref: '#/components/schemas/b',
               },
               {
-                $ref: '#/components/c',
+                $ref: '#/components/schemas/c',
               },
               {
                 type: 'null',
@@ -721,13 +720,12 @@ describe('resolver test suite', () => {
           a: {
             oneOf: [
               {
-                $ref: '#/components/b',
+                $ref: '#/components/schemas/b',
               },
               {
-                $ref: '#/components/c',
+                $ref: '#/components/schemas/c',
               },
             ],
-            type: 'string',
             nullable: true,
           },
           b: {
@@ -740,6 +738,166 @@ describe('resolver test suite', () => {
       },
     };
 
+    const converter = new Converter(input, { verbose: true });
+    const converted: any = converter.convert();
+    expect(converted).toEqual(expected);
+    done();
+  });
+
+  test('Convert oneOf with ref nullable type array', (done) => {
+    const input = {
+      components: {
+        schemas: {
+          a: {
+            oneOf: [
+              {
+                $ref: '#/components/schemas/b',
+              },
+              {
+                $ref: '#/components/schemas/c',
+              },
+            ],
+          },
+          b: {
+            type: ['number', 'null'],
+          },
+          c: {
+            type: 'string',
+          },
+        },
+      },
+    };
+    const expected = {
+      openapi: '3.0.3',
+      components: {
+        schemas: {
+          a: {
+            nullable: true,
+            oneOf: [
+              {
+                $ref: '#/components/schemas/b',
+              },
+              {
+                $ref: '#/components/schemas/c',
+              },
+            ],
+          },
+          b: {
+            type: 'number',
+            nullable: true,
+          },
+          c: {
+            type: 'string',
+          },
+        },
+      },
+    };
+
+    const converter = new Converter(input, { verbose: true });
+    const converted: any = converter.convert();
+    expect(converted).toEqual(expected);
+    done();
+  });
+
+  test('Convert oneOf with deep null type', (done) => {
+    const input = {
+      components: {
+        schemas: {
+          a: {
+            oneOf: [
+              {
+                $ref: '#/components/schemas/b',
+              },
+              {
+                $ref: '#/components/schemas/c',
+              },
+            ],
+          },
+          b: {
+            anyOf: [ {$ref: "#/components/schemas/d"}, { type: 'string'}],
+          },
+          c: {
+            type: 'string',
+          },
+          d: {
+            oneOf: [
+              { type: 'null' },
+              { type: 'number' }
+            ]
+          }
+        },
+      },
+    };
+    const expected = {
+      openapi: '3.0.3',
+      components: {
+        schemas: {
+          a: {
+            nullable: true,
+            oneOf: [
+              {
+                $ref: '#/components/schemas/b',
+              },
+              {
+                $ref: '#/components/schemas/c',
+              },
+            ],
+          },
+          b: {
+            anyOf: [ {$ref: "#/components/schemas/d"}, { type: 'string'}],
+            nullable: true,
+          },
+          c: {
+            type: 'string',
+          },
+          d: {
+            nullable: true,
+            allOf: [
+              { type: 'number' }
+            ]
+          }
+        },
+      },
+    };
+
+    const converter = new Converter(input, { verbose: true });
+    const converted: any = converter.convert();
+    expect(converted).toEqual(expected);
+    done();
+  });
+
+  test('Convert recursive schema', (done) => {
+    const input = {
+      components: {
+        schemas: {
+          a: {
+            anyOf: [ { $ref: "#/components/schemas/b" }, { $ref: "#/components/schemas/c" } ],
+          },
+          b: {
+            anyOf: [ { $ref: "#/components/schemas/a" }, { $ref: "#/components/schemas/c" } ]
+          },
+          c: {
+            type: "string",
+          },
+        },
+      },
+    };
+    const expected = {
+      openapi: '3.0.3',
+      components: {
+        schemas: {
+          a: {
+            anyOf: [ { $ref: "#/components/schemas/b" }, { $ref: "#/components/schemas/c" } ],
+          },
+          b: {
+            anyOf: [ { $ref: "#/components/schemas/a" }, { $ref: "#/components/schemas/c" } ]
+          },
+          c: {
+            type: "string",
+          },
+        },
+      },
+    };
     const converter = new Converter(input, { verbose: true });
     const converted: any = converter.convert();
     expect(converted).toEqual(expected);

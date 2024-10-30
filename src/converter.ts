@@ -56,6 +56,7 @@ export interface ConverterOptions {
 }
 
 export class Converter {
+  private openapi31: OpenAPI3;
   private openapi30: OpenAPI3;
   private verbose = false;
   private deleteExampleWithId = false;
@@ -72,6 +73,7 @@ export class Converter {
    * @throws Error if the scopeDescriptionFile (if specified) cannot be read or parsed as YAML/JSON
    */
   constructor(openapiDocument: object, options?: ConverterOptions) {
+    this.openapi31 = openapiDocument as OpenAPI3;
     this.openapi30 = Converter.deepClone(openapiDocument) as OpenAPI3;
     this.verbose = Boolean(options?.verbose);
     this.deleteExampleWithId = Boolean(options?.deleteExampleWithId);
@@ -272,40 +274,48 @@ export class Converter {
           return v.hasOwnProperty('type') && v['type'] === 'null';
         });
 
-        let isNullable = typeNullIndex > -1;
-
-        // Get the main type of the root object. nullable can't exist with the type property in 3.0.3.
-        const mainType = entries.reduce((acc, cur) => {
-          const sub = isRef(cur) ? getRefSchema(this.openapi30, cur) : cur;
-
-          if (sub['type']) {
-            // if our sub-type...type has null in it, it's still nullable
-            if (Array.isArray(sub['type'])) {
-              if (sub['type'].includes('null')) {
-                isNullable = true;
-              }
-              // return the first non-null type. multiple unrelated types aren't
-              // currently supported.
-              return sub['type'].filter((_) => _ !== 'null')[0];
+        const nullable = (o, visitedRefs : Set<string>) => {
+          let obj = o;
+          if (isRef(o)) {
+            const ref = o['$ref'] as string;
+            if (visitedRefs.has(ref)) {
+              return false;
             }
-            // only set non null types
-            if (sub['type'] !== 'null') {
-              return sub['type'];
+            visitedRefs = new Set([...visitedRefs, ref]);
+            obj = getRefSchema(this.openapi31, o)
+          }
+
+          if (obj.hasOwnProperty('type')) {
+            if (obj['type'] === 'null') {
+              return true;
+            }
+            if (Array.isArray(obj['type'])) {
+              return obj['type'].some((t) => t === 'null');
             }
           }
-          return acc;
-        }, null);
+          if (obj['anyOf']) {
+            return obj['anyOf'].some((e) => nullable(e, visitedRefs));
+          }
+          if (obj['oneOf']) {
+            return obj['oneOf'].some((e) => nullable(e, visitedRefs));
+          }
+          if (obj['allOf']) {
+            return obj['allOf'].every((e) => nullable(e, visitedRefs));
+          }
+          return false;
+        }
+
+        const isNullable = typeNullIndex > -1 || entries.some((e) => nullable(e, new Set([])));
 
         if (isNullable) {
-          // has a type: null entry in the array
           schema['nullable'] = true;
-          schema['type'] = mainType;
+          // If there is a `type: null` entry directly in the array, remove it
           if (typeNullIndex > -1) {
             schema[of].splice(typeNullIndex, 1);
           }
 
           if (entries.length === 1) {
-            // if only one entry, anyOf/oneOf probably shouldn't be used.
+            // if only one entry remaining, anyOf/oneOf probably shouldn't be used.
             // Instead, convert to allOf with nullable & ref
             schema['allOf'] = [schema[of][0]];
 
