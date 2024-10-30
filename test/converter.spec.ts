@@ -404,6 +404,42 @@ describe('resolver test suite', () => {
     done();
   });
 
+  test('Remove propertyNames keywords', (done) => {
+    const input = {
+      openapi: '3.1.0',
+      components: {
+        schemas: {
+          a: {
+            type: "object",
+            propertyNames: {
+              pattern: "^[A-Za-z_][A-Za-z0-9_]*$",
+            },
+            additionalProperties: {
+              type: "string",
+            }
+          },
+        },
+      },
+    };
+    const expected = {
+      openapi: '3.0.3',
+      components: {
+        schemas: {
+          a: {
+            type: "object",
+            additionalProperties: {
+              type: "string",
+            }
+          },
+        },
+      },
+    };
+    const converter = new Converter(input, { verbose: true });
+    const converted: any = converter.convert();
+    expect(converted).toEqual(expected);
+    done();
+  });
+
   test('Remove contentMediaType keywords', (done) => {
     const input = {
       openapi: '3.1.0',

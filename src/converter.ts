@@ -251,7 +251,7 @@ export class Converter {
     }
   }
   removeUnsupportedSchemaKeywords() {
-    const keywordsToRemove = ['$id', '$schema', 'unevaluatedProperties', 'contentMediaType', 'patternProperties'];
+    const keywordsToRemove = ['$id', '$schema', 'unevaluatedProperties', 'contentMediaType', 'patternProperties', 'propertyNames'];
     const schemaVisitor: SchemaVisitor = (schema: SchemaObject): SchemaObject => {
       keywordsToRemove.forEach((key) => {
         if (schema.hasOwnProperty(key)) {

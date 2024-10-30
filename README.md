@@ -450,8 +450,9 @@ Contributions welcome!
   `exclusiveMinimum` and
   `exclusiveMaximum`,
   `unevaluatedProperties`,
-  `patternProperties`
-  as defined in JSON Schema 2012-12; these are not supported in JSON Schema Draft 7
+  `patternProperties`,
+  `propertyNames`
+  as defined in JSON Schema 2020-12; these are not supported in JSON Schema Draft 7
   used in OAS 3.0
 * Webhooks are not removed. Contributions welcome!
 * The tool only supports self-contained documents. It does not follow or resolve
