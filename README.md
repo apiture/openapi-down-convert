@@ -454,7 +454,6 @@ Contributions welcome!
   `propertyNames`
   as defined in JSON Schema 2020-12; these are not supported in JSON Schema Draft 7
   used in OAS 3.0
-* Webhooks are not removed. Contributions welcome!
 * The tool only supports self-contained documents. It does not follow or resolve
   external `$ref` documents embedded in the source document.
 * Request body and response body `content` object transformations, such as
