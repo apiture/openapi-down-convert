@@ -986,7 +986,7 @@ test('contentMediaType with existing unexpected format', (done) => {
   done();
 });
 
-test('converts nullable oneOf', (done) => {
+test('converts nullable oneOf with an array', (done) => {
   const input = {
     openapi: '3.1.0',
     components: {
@@ -1022,6 +1022,45 @@ test('converts nullable oneOf', (done) => {
           nullable: true,
           type: 'array',
           items: { $ref: '#/components/ArrayItem' },
+        },
+      },
+    },
+  };
+
+  const converter = new Converter(input);
+  const converted: any = converter.convert();
+
+  console.log(converted);
+  expect(converted).toEqual(expected);
+  done();
+});
+
+test('converts nullable oneOf with an object type', (done) => {
+  const input = {
+    openapi: '3.1.0',
+    components: {
+      schemas: {
+        Object: {
+          type: 'object',
+          properties: { text: { type: 'string' } },
+        },
+        NullableOneOfArray: {
+          oneOf: [{ type: 'null' }, { $ref: '#/components/Object' }],
+        },
+      },
+    },
+  };
+
+  const expected = {
+    openapi: '3.0.3',
+    components: {
+      schemas: {
+        Object: {
+          type: 'object',
+          properties: { text: { type: 'string' } },
+        },
+        NullableOneOfArray: {
+          allOf: [{ nullable: true, type: 'object' }, { oneOf: [{ $ref: '#/components/Object' }] }],
         },
       },
     },
