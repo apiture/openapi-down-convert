@@ -144,6 +144,7 @@ export class Converter {
     this.convertJsonSchemaContentMediaType();
     this.convertConstToEnum();
     this.convertNullableTypeArray();
+    this.convertNullableOneOf();
     this.removeWebhooksObject();
     this.removeUnsupportedSchemaKeywords();
     if (this.convertSchemaComments) {
@@ -244,6 +245,33 @@ export class Converter {
     visitSchemaObjects(this.openapi30, schemaVisitor);
   }
 
+  /**
+   * Convert oneOf with a single null type to
+   * `nullable: true` and remove the null variant from oneOf.
+   */
+  convertNullableOneOf() {
+    const schemaVisitor: SchemaVisitor = (schema: SchemaObject): SchemaObject => {
+      if (schema.hasOwnProperty('oneOf')) {
+        const oneOf = schema['oneOf'];
+        const nonTypeNull = oneOf.filter((variant: object) => {
+          const keys = Object.keys(variant);
+          return !(keys.length === 1 && keys.includes('type') && variant['type'] === 'null');
+        });
+
+        if (oneOf.length > nonTypeNull.length) {
+          console.log('had an oneOf!', oneOf);
+
+          const allOf = [{ nullable: true }, { oneOf: nonTypeNull }];
+          console.log('allOf', allOf);
+          delete schema['oneOf'];
+          schema['allOf'] = allOf;
+        }
+      }
+      return this.walkNestedSchemaObjects(schema, schemaVisitor);
+    };
+    visitSchemaObjects(this.openapi30, schemaVisitor);
+  }
+
   removeWebhooksObject() {
     if (Object.hasOwnProperty.call(this.openapi30, 'webhooks')) {
       this.log(`Deleted webhooks object`);
@@ -251,7 +279,14 @@ export class Converter {
     }
   }
   removeUnsupportedSchemaKeywords() {
-    const keywordsToRemove = ['$id', '$schema', 'unevaluatedProperties', 'contentMediaType', 'patternProperties', 'propertyNames'];
+    const keywordsToRemove = [
+      '$id',
+      '$schema',
+      'unevaluatedProperties',
+      'contentMediaType',
+      'patternProperties',
+      'propertyNames',
+    ];
     const schemaVisitor: SchemaVisitor = (schema: SchemaObject): SchemaObject => {
       keywordsToRemove.forEach((key) => {
         if (schema.hasOwnProperty(key)) {
@@ -371,7 +406,7 @@ export class Converter {
     return JSON.stringify(x, null, 2);
   }
   /** HTTP methods */
-  static readonly HTTP_METHODS = ['delete', 'get', 'head', 'options', 'patch', 'post', 'put', 'trace' ];
+  static readonly HTTP_METHODS = ['delete', 'get', 'head', 'options', 'patch', 'post', 'put', 'trace'];
   /**
    * OpenAPI 3.1 defines a new `openIdConnect` security scheme.
    * Down-convert the scheme to `oauth2` / authorization code flow.
@@ -386,7 +421,7 @@ export class Converter {
       for (const path in paths) {
         // filter out path.{$ref, summary, description, parameters, servers} and x-* specification extensions
         const methods = Object.keys(paths[path]).filter((op) => Converter.HTTP_METHODS.includes(op));
-        methods.forEach(method => {
+        methods.forEach((method) => {
           const operation = paths[path][method];
           const sec = (operation?.security || []) as object[];
           sec.forEach((s) => {
