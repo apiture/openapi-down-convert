@@ -253,11 +253,15 @@ export class Converter {
    * @returns The schema object from the document.
    */
   findSchema(ref: string): SchemaObject {
-    const schemaName = ref.split('/').pop();
-    const components = this.openapi30?.components;
-    const schemas = components && components['schemas'];
-    if (schemas) {
-      return schemas[schemaName];
+    const prefix = "#/components/schemas/";
+    const schemaName = ref.startsWith(prefix) && ref.slice(prefix.length);
+
+    if (schemaName) {
+      const components = this.openapi30?.components;
+      const schemas = components && components['schemas'];
+      if (schemas) {
+        return schemas[schemaName];
+      }
     }
   }
 
@@ -280,8 +284,10 @@ export class Converter {
     } else if (isRef(node)) {
       const ref = node['$ref'];
       const resolvedSchema = this.findSchema(ref);
-      const type = this.findSchemaObjectType(resolvedSchema);
-      return type;
+      if (resolvedSchema) {
+        const type = this.findSchemaObjectType(resolvedSchema);
+        return type;
+      }
     }
   }
 
@@ -304,10 +310,10 @@ export class Converter {
 
         if (oneOf.length > nonTypeNull.length) {
           const type = this.findSchemaObjectType({ oneOf: nonTypeNull });
-          delete schema['oneOf'];
           // Nodes with type 'array' must have a sibling 'items' property.
           // Thus, we'll inline the array type, if possible.
           if (type === 'array' && nonTypeNull.length === 1) {
+            delete schema['oneOf'];
             const arraySchema = isRef(nonTypeNull[0]) ? this.findSchema(nonTypeNull[0]['$ref']) : nonTypeNull[0];
             for (const key of Object.keys(arraySchema)) {
               schema[key] = arraySchema[key];
@@ -315,7 +321,8 @@ export class Converter {
             schema['nullable'] = true;
           }
           // Other node types work well with this approach.
-          else {
+          else if (type) {
+            delete schema['oneOf'];
             const allOf = [{ nullable: true, type }, { oneOf: nonTypeNull }];
             schema['allOf'] = allOf;
           }
