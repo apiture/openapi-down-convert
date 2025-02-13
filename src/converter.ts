@@ -12,6 +12,7 @@ import {
   JsonNode,
   RefObject,
   SchemaObject,
+  isRef,
 } from './RefVisitor';
 
 /** Lightweight OAS document top-level fields */
@@ -245,6 +246,33 @@ export class Converter {
     visitSchemaObjects(this.openapi30, schemaVisitor);
   }
 
+  findSchema(ref: string): SchemaObject {
+    const schemaName = ref.split('/').pop();
+    const components = this.openapi30?.components;
+    const schemas = components && components['schemas'];
+    if (schemas) {
+      return schemas[schemaName];
+    }
+  }
+
+  findSchemaObjectType(node: SchemaObject): string {
+    if (node.hasOwnProperty('type')) {
+      return node['type'];
+    } else if (node.hasOwnProperty('allOf') || node.hasOwnProperty('oneOf') || node.hasOwnProperty('anyOf')) {
+      const variants = node['allOf'] || node['anyOf'] || node['oneOf'];
+      const types: [string] = variants.map((variant: SchemaObject) => this.findSchemaObjectType(variant));
+      const uniqueTypes = [...new Set(types.filter((type) => type !== undefined))];
+      if (uniqueTypes.length === 1) {
+        return uniqueTypes[0];
+      }
+    } else if (isRef(node)) {
+      const ref = node['$ref'];
+      const resolvedSchema = this.findSchema(ref);
+      const type = this.findSchemaObjectType(resolvedSchema);
+      return type;
+    }
+  }
+
   /**
    * Convert oneOf with a single null type to
    * `nullable: true` and remove the null variant from oneOf.
@@ -259,12 +287,14 @@ export class Converter {
         });
 
         if (oneOf.length > nonTypeNull.length) {
-          console.log('had an oneOf!', oneOf);
-
           const allOf = [{ nullable: true }, { oneOf: nonTypeNull }];
-          console.log('allOf', allOf);
           delete schema['oneOf'];
           schema['allOf'] = allOf;
+
+          const type = this.findSchemaObjectType(schema);
+          if (type) {
+            schema['type'] = type;
+          }
         }
       }
       return this.walkNestedSchemaObjects(schema, schemaVisitor);
