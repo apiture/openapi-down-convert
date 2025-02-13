@@ -246,6 +246,12 @@ export class Converter {
     visitSchemaObjects(this.openapi30, schemaVisitor);
   }
 
+  /**
+   * Finds the schema object from the components schemas.
+   *
+   * @param ref The $ref string value.
+   * @returns The schema object from the document.
+   */
   findSchema(ref: string): SchemaObject {
     const schemaName = ref.split('/').pop();
     const components = this.openapi30?.components;
@@ -255,6 +261,12 @@ export class Converter {
     }
   }
 
+  /**
+   * Finds the type of an SchemaObject, walking trough the references.
+   *
+   * @param node The node that we want to find the type of.
+   * @returns The deduced type for this node.
+   */
   findSchemaObjectType(node: SchemaObject): string {
     if (node.hasOwnProperty('type')) {
       return node['type'];
@@ -274,8 +286,12 @@ export class Converter {
   }
 
   /**
-   * Convert oneOf with a single null type to
-   * `nullable: true` and remove the null variant from oneOf.
+   * OpenAPI 3.1 has a common pattern where an `{ oneOf: [{ type: null }, { .. }]}`
+   * Is used to represent a nullable type.
+   *
+   * Up to this point the conversion would result in a `{ oneOf: [{ nullable: true }, { .. }]}` node.
+   * Since `nullable: true` must have a sibling `type` property,
+   * this function adds the type to the `nullable: true` field.
    */
   convertNullableOneOf() {
     const schemaVisitor: SchemaVisitor = (schema: SchemaObject): SchemaObject => {
