@@ -309,9 +309,10 @@ export class Converter {
           // Thus, we'll inline the array type, if possible.
           if (type === 'array' && nonTypeNull.length === 1) {
             const arraySchema = isRef(nonTypeNull[0]) ? this.findSchema(nonTypeNull[0]['$ref']) : nonTypeNull[0];
-            for (const key in Object.keys(arraySchema)) {
+            for (const key of Object.keys(arraySchema)) {
               schema[key] = arraySchema[key];
             }
+            schema['nullable'] = true;
           }
           // Other node types work well with this approach.
           else {

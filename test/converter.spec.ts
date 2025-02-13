@@ -355,7 +355,6 @@ describe('resolver test suite', () => {
     done();
   });
 
-
   test('Remove patternProperties keywords', (done) => {
     const input = {
       openapi: '3.1.0',
@@ -364,12 +363,12 @@ describe('resolver test suite', () => {
           a: {
             type: 'object',
             properties: {
-                  s: {
-                    type: 'string',
-                  },
+              s: {
+                type: 'string',
+              },
             },
             patternProperties: {
-            "^[a-z{2}-[A-Z]{2,3}]$": {
+              '^[a-z{2}-[A-Z]{2,3}]$': {
                 type: 'object',
                 unevaluatedProperties: false,
                 properties: {
@@ -410,13 +409,13 @@ describe('resolver test suite', () => {
       components: {
         schemas: {
           a: {
-            type: "object",
+            type: 'object',
             propertyNames: {
-              pattern: "^[A-Za-z_][A-Za-z0-9_]*$",
+              pattern: '^[A-Za-z_][A-Za-z0-9_]*$',
             },
             additionalProperties: {
-              type: "string",
-            }
+              type: 'string',
+            },
           },
         },
       },
@@ -426,10 +425,10 @@ describe('resolver test suite', () => {
       components: {
         schemas: {
           a: {
-            type: "object",
+            type: 'object',
             additionalProperties: {
-              type: "string",
-            }
+              type: 'string',
+            },
           },
         },
       },
@@ -452,7 +451,7 @@ describe('resolver test suite', () => {
               b: {
                 type: 'string',
                 contentMediaType: 'application/pdf',
-                maxLength: 5000000
+                maxLength: 5000000,
               },
             },
           },
@@ -468,7 +467,7 @@ describe('resolver test suite', () => {
             properties: {
               b: {
                 type: 'string',
-                maxLength: 5000000
+                maxLength: 5000000,
               },
             },
           },
@@ -481,35 +480,34 @@ describe('resolver test suite', () => {
     done();
   });
 
-
-   test('Remove webhooks object', (done) => {
+  test('Remove webhooks object', (done) => {
     const input = {
       openapi: '3.1.0',
-        webhooks: {
-          newThing: {
-            post: {
-              requestBody: {
-                description: 'Information about a new thing in the system',
-                content: {
-                  'application/json': {
-                    schema: {
-                      $ref: '#/components/schemas/newThing'
-                    }
-                  }
-                }
+      webhooks: {
+        newThing: {
+          post: {
+            requestBody: {
+              description: 'Information about a new thing in the system',
+              content: {
+                'application/json': {
+                  schema: {
+                    $ref: '#/components/schemas/newThing',
+                  },
+                },
               },
-              responses: {
-                200: {
-                  description: 'Return a 200 status to indicate that the data was received successfully'
-                }
-              }
-            }
-          }
-        }
+            },
+            responses: {
+              200: {
+                description: 'Return a 200 status to indicate that the data was received successfully',
+              },
+            },
+          },
+        },
+      },
     };
 
     const expected = {
-      openapi: '3.0.3'
+      openapi: '3.0.3',
     };
 
     const converter = new Converter(input, { verbose: true });
@@ -831,11 +829,11 @@ test('binary encoded data with existing binary format', (done) => {
   const converter = new Converter(input);
   let caught = false;
   try {
-      converter.convert();
+    converter.convert();
   } catch (e) {
     caught = true;
   }
-  expect(caught).toBeTruthy()
+  expect(caught).toBeTruthy();
   // TODO how to check that Converter logged a specific note?
   done();
 });
@@ -909,7 +907,7 @@ test('contentMediaType with existing binary format', (done) => {
         binaryEncodedDataWithExistingBinaryFormat: {
           type: 'string',
           contentMediaType: 'application/octet-stream',
-          format: 'binary'
+          format: 'binary',
         },
       },
     },
@@ -931,7 +929,6 @@ test('contentMediaType with existing binary format', (done) => {
   // TODO how to check that Converter logged to console.warn ?
   done();
 });
-
 
 test('contentMediaType with no existing format', (done) => {
   const input = {
@@ -971,20 +968,69 @@ test('contentMediaType with existing unexpected format', (done) => {
         binaryEncodedDataWithExistingBinaryFormat: {
           type: 'string',
           contentMediaType: 'application/octet-stream',
-          format: 'byte'
+          format: 'byte',
         },
       },
     },
   };
 
-   const converter = new Converter(input);
-   let caught = false;
-   try {
-     converter.convert();
-   } catch (e) {
-     caught = true;
-   }
-   expect(caught).toBeTruthy();
+  const converter = new Converter(input);
+  let caught = false;
+  try {
+    converter.convert();
+  } catch (e) {
+    caught = true;
+  }
+  expect(caught).toBeTruthy();
   // TODO how to check that Converter logged to console.warn ?
+  done();
+});
+
+test('converts nullable oneOf', (done) => {
+  const input = {
+    openapi: '3.1.0',
+    components: {
+      schemas: {
+        ArrayItem: {
+          type: 'object',
+          properties: { text: { type: 'string' } },
+        },
+        ArrayType: {
+          type: 'array',
+          items: { $ref: '#/components/ArrayItem' },
+        },
+        NullableOneOfArray: {
+          oneOf: [{ type: 'null' }, { $ref: '#/components/ArrayType' }],
+        },
+      },
+    },
+  };
+
+  const expected = {
+    openapi: '3.0.3',
+    components: {
+      schemas: {
+        ArrayItem: {
+          type: 'object',
+          properties: { text: { type: 'string' } },
+        },
+        ArrayType: {
+          type: 'array',
+          items: { $ref: '#/components/ArrayItem' },
+        },
+        NullableOneOfArray: {
+          nullable: true,
+          type: 'array',
+          items: { $ref: '#/components/ArrayItem' },
+        },
+      },
+    },
+  };
+
+  const converter = new Converter(input);
+  const converted: any = converter.convert();
+
+  console.log(converted);
+  expect(converted).toEqual(expected);
   done();
 });
