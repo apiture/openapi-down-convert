@@ -288,11 +288,16 @@ export class Converter {
 
         if (oneOf.length > nonTypeNull.length) {
           const type = this.findSchemaObjectType({ oneOf: nonTypeNull });
-          const allOf = [{ nullable: true, type }, { oneOf: nonTypeNull }];
           delete schema['oneOf'];
-          schema['allOf'] = allOf;
-
-          console.log(schema);
+          if (type === 'array' && nonTypeNull.length === 1) {
+            const arraySchema = isRef(nonTypeNull[0]) ? this.findSchema(nonTypeNull[0]['$ref']) : nonTypeNull[0];
+            for (const key in Object.keys(arraySchema)) {
+              schema[key] = arraySchema[key];
+            }
+          } else {
+            const allOf = [{ nullable: true, type }, { oneOf: nonTypeNull }];
+            schema['allOf'] = allOf;
+          }
         }
       }
       return this.walkNestedSchemaObjects(schema, schemaVisitor);
