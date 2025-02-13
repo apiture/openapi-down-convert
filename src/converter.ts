@@ -333,14 +333,7 @@ export class Converter {
     }
   }
   removeUnsupportedSchemaKeywords() {
-    const keywordsToRemove = [
-      '$id',
-      '$schema',
-      'unevaluatedProperties',
-      'contentMediaType',
-      'patternProperties',
-      'propertyNames',
-    ];
+    const keywordsToRemove = ['$id', '$schema', 'unevaluatedProperties', 'contentMediaType', 'patternProperties', 'propertyNames'];
     const schemaVisitor: SchemaVisitor = (schema: SchemaObject): SchemaObject => {
       keywordsToRemove.forEach((key) => {
         if (schema.hasOwnProperty(key)) {
@@ -460,7 +453,7 @@ export class Converter {
     return JSON.stringify(x, null, 2);
   }
   /** HTTP methods */
-  static readonly HTTP_METHODS = ['delete', 'get', 'head', 'options', 'patch', 'post', 'put', 'trace'];
+  static readonly HTTP_METHODS = ['delete', 'get', 'head', 'options', 'patch', 'post', 'put', 'trace' ];
   /**
    * OpenAPI 3.1 defines a new `openIdConnect` security scheme.
    * Down-convert the scheme to `oauth2` / authorization code flow.
@@ -475,7 +468,7 @@ export class Converter {
       for (const path in paths) {
         // filter out path.{$ref, summary, description, parameters, servers} and x-* specification extensions
         const methods = Object.keys(paths[path]).filter((op) => Converter.HTTP_METHODS.includes(op));
-        methods.forEach((method) => {
+        methods.forEach(method => {
           const operation = paths[path][method];
           const sec = (operation?.security || []) as object[];
           sec.forEach((s) => {
