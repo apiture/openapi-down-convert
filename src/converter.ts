@@ -287,14 +287,12 @@ export class Converter {
         });
 
         if (oneOf.length > nonTypeNull.length) {
-          const allOf = [{ nullable: true }, { oneOf: nonTypeNull }];
+          const type = this.findSchemaObjectType({ oneOf: nonTypeNull });
+          const allOf = [{ nullable: true, type }, { oneOf: nonTypeNull }];
           delete schema['oneOf'];
           schema['allOf'] = allOf;
 
-          const type = this.findSchemaObjectType(schema);
-          if (type) {
-            schema['type'] = type;
-          }
+          console.log(schema);
         }
       }
       return this.walkNestedSchemaObjects(schema, schemaVisitor);
