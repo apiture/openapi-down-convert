@@ -1000,10 +1000,10 @@ test('converts nullable oneOf with an array', (done) => {
         },
         ArrayType: {
           type: 'array',
-          items: { $ref: '#/components/ArrayItem' },
+          items: { $ref: '#/components/schemas/ArrayItem' },
         },
         NullableOneOfArray: {
-          oneOf: [{ type: 'null' }, { $ref: '#/components/ArrayType' }],
+          oneOf: [{ type: 'null' }, { $ref: '#/components/schemas/ArrayType' }],
         },
       },
     },
@@ -1019,12 +1019,12 @@ test('converts nullable oneOf with an array', (done) => {
         },
         ArrayType: {
           type: 'array',
-          items: { $ref: '#/components/ArrayItem' },
+          items: { $ref: '#/components/schemas/ArrayItem' },
         },
         NullableOneOfArray: {
           nullable: true,
           type: 'array',
-          items: { $ref: '#/components/ArrayItem' },
+          items: { $ref: '#/components/schemas/ArrayItem' },
         },
       },
     },
@@ -1048,7 +1048,7 @@ test('converts nullable oneOf with an object type', (done) => {
           properties: { text: { type: 'string' } },
         },
         NullableOneOfArray: {
-          oneOf: [{ type: 'null' }, { $ref: '#/components/Object' }],
+          oneOf: [{ type: 'null' }, { $ref: '#/components/schemas/Object' }],
         },
       },
     },
@@ -1063,7 +1063,7 @@ test('converts nullable oneOf with an object type', (done) => {
           properties: { text: { type: 'string' } },
         },
         NullableOneOfArray: {
-          allOf: [{ nullable: true, type: 'object' }, { oneOf: [{ $ref: '#/components/Object' }] }],
+          allOf: [{ nullable: true, type: 'object' }, { oneOf: [{ $ref: '#/components/schemas/Object' }] }],
         },
       },
     },
