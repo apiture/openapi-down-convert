@@ -134,6 +134,7 @@ describe('resolver test suite', () => {
       authorizationUrl: 'https://www.example.com/test/authorize',
       tokenUrl: 'https://www.example.com/test/token',
       scopeDescriptionFile: path.join(__dirname, 'data/scopes.yaml'),
+      convertOpenIdConnectToOAuth2: true
     };
     const converter = new Converter(input, options);
     const converted: any = converter.convert();

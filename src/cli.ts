@@ -37,7 +37,8 @@ async function main(args: string[] = process.argv) {
     allOfTransform: Boolean(opts.allOf),
     authorizationUrl: opts.authorizationUrl,
     tokenUrl: opts.tokenUrl,
-    scopeDescriptionFile: opts.scopes,
+    scopeDescriptionFile: opts.oidcToOauth2 || opts.scopes,
+    convertOpenIdConnectToOAuth2: !! (opts.oidcToOauth2 || opts.scopes),
     convertSchemaComments: opts.convertSchemaComments,
   };
   const converter = new Converter(source, cOpts);
