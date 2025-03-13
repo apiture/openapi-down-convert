@@ -84,7 +84,7 @@ export class Converter {
     this.allOfTransform = Boolean(options?.allOfTransform);
     this.authorizationUrl = options?.authorizationUrl || 'https://www.example.com/oauth2/authorize';
     this.tokenUrl = options?.tokenUrl || 'https://www.example.com/oauth2/token';
-    this.convertOpenIdConnectToOAuth2 = options.convertOpenIdConnectToOAuth2;
+    this.convertOpenIdConnectToOAuth2 = options?.convertOpenIdConnectToOAuth2 || !!(options?.scopeDescriptionFile);
     if (this.convertOpenIdConnectToOAuth2) {
       this.loadScopeDescriptions(options.scopeDescriptionFile);
     }
@@ -404,7 +404,7 @@ export class Converter {
             const requirement = s?.[schemeName] as string[];
             if (requirement) {
               requirement.forEach((scope) => {
-                scopes[scope] = this.scopeDescriptions.scopes[scope].description || `TODO: describe the ${scope} scope`;
+                scopes[scope] = this.scopeDescriptions[scope] || `TODO: describe the '${scope}' scope`;
               });
             }
           });
