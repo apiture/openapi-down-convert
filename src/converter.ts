@@ -40,6 +40,13 @@ export interface ConverterOptions {
   authorizationUrl?: string;
   /** The tokenUrl for openIdConnect -> oauth2 transformation */
   tokenUrl?: string;
+  /**
+   * If `true`, convert `openIdConnect` security scheme
+   * to `oauth2`. Some tools (even those which purport to support OAS 3.0)
+   * do not process the `openIdConnect` security scheme
+   * (I'm looking at you, openapi-generator)
+   */
+  convertOpenIdConnectToOAuth2?: boolean;
   /** Name of YAML/JSON file with scope descriptions.
    * This is a simple map in the format
    * `{ scope1: "description of scope1", ... }`
@@ -64,6 +71,7 @@ export class Converter {
   private scopeDescriptions = undefined;
   private convertSchemaComments = false;
   private returnCode = 0;
+  private convertOpenIdConnectToOAuth2: boolean;
 
   /**
    * Construct a new Converter
@@ -76,7 +84,10 @@ export class Converter {
     this.allOfTransform = Boolean(options?.allOfTransform);
     this.authorizationUrl = options?.authorizationUrl || 'https://www.example.com/oauth2/authorize';
     this.tokenUrl = options?.tokenUrl || 'https://www.example.com/oauth2/token';
-    this.loadScopeDescriptions(options?.scopeDescriptionFile);
+    this.convertOpenIdConnectToOAuth2 = options.convertOpenIdConnectToOAuth2;
+    if (this.convertOpenIdConnectToOAuth2) {
+      this.loadScopeDescriptions(options.scopeDescriptionFile);
+    }
     this.convertSchemaComments = options?.convertSchemaComments;
   }
 
@@ -84,9 +95,6 @@ export class Converter {
    * @throws Error if the file cannot be read or parsed as YAML/JSON
    */
   private loadScopeDescriptions(scopeDescriptionFile?: string) {
-    if (!scopeDescriptionFile) {
-      return;
-    }
     this.scopeDescriptions = yaml.load(fs.readFileSync(scopeDescriptionFile, 'utf8'));
   }
 
@@ -136,8 +144,8 @@ export class Converter {
     this.removeLicenseIdentifier();
     this.convertSchemaRef();
     this.simplifyNonSchemaRef();
-    if (this.scopeDescriptions) {
-      this.convertSecuritySchemes();
+    if (this.convertOpenIdConnectToOAuth2) {
+      this.convertOpenIdConnectSecuritySchemesToOAuth2();
     }
     this.convertJsonSchemaExamples();
     this.convertJsonSchemaContentEncoding();
@@ -373,13 +381,16 @@ export class Converter {
   /** HTTP methods */
   static readonly HTTP_METHODS = ['delete', 'get', 'head', 'options', 'patch', 'post', 'put', 'trace' ];
   /**
-   * OpenAPI 3.1 defines a new `openIdConnect` security scheme.
-   * Down-convert the scheme to `oauth2` / authorization code flow.
+   * OpenAPI 3.0 defines a new `openIdConnect` security scheme
+   * but not all tools support `openIdConnect`, even if such tools
+   * claim support for OAS 3.0
+   * This converts the `openIdConnect` security scheme
+   * to the `oauth2` security scheme.
    * Collect all the scopes used in any security requirements within
    * operations and add them to the scheme. Also define the
    * URLs to the `authorizationUrl` and `tokenUrl` of `oauth2`.
    */
-  convertSecuritySchemes() {
+  convertOpenIdConnectSecuritySchemesToOAuth2() {
     const oauth2Scopes = (schemeName: string): object => {
       const scopes = {};
       const paths = this.openapi30?.paths;
@@ -393,7 +404,7 @@ export class Converter {
             const requirement = s?.[schemeName] as string[];
             if (requirement) {
               requirement.forEach((scope) => {
-                scopes[scope] = this.scopeDescriptions[scope] || `TODO: describe the '${scope}' scope`;
+                scopes[scope] = this.scopeDescriptions.scopes[scope].description || `TODO: describe the ${scope} scope`;
               });
             }
           });
@@ -410,8 +421,8 @@ export class Converter {
         scheme.type = 'oauth2';
         const openIdConnectUrl = scheme.openIdConnectUrl;
         scheme.description = `OAuth2 Authorization Code Flow. The client may
-          GET the OpenID Connect configuration JSON from \`${openIdConnectUrl}\`
-          to get the correct \`authorizationUrl\` and \`tokenUrl\`.`;
+GET the OpenID Connect configuration JSON from \`${openIdConnectUrl}\`
+to get the correct \`authorizationUrl\` and \`tokenUrl\`.`;
         delete scheme.openIdConnectUrl;
         const scopes = oauth2Scopes(schemeName);
         scheme.flows = {
