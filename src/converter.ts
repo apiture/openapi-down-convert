@@ -74,7 +74,7 @@ export class Converter {
   private convertOpenIdConnectToOAuth2: boolean;
 
   /** A tag used to temporarily mark schema $ref objects inside schema objects */
-  public static SCHEMA_REF_TAG = 'x-apiture-schema-ref';
+  public static SCHEMA_REF_TAG = 'x-openapi-down-convert-schema-ref';
 
   static tagObjectAsSchemaRef(schemaObj: object) {
     (schemaObj as unknown)[Converter.SCHEMA_REF_TAG] = true;
