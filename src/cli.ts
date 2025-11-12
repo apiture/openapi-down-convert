@@ -30,7 +30,7 @@ async function main(args: string[] = process.argv) {
   const opts = cli.opts();
   const sourceFileName: string = opts.input || 'openapi.yaml';
   const outputFileName: string = opts.output;
-  const source = yaml.load(fs.readFileSync(sourceFileName, 'utf8'));
+  const source = yaml.load(fs.readFileSync(sourceFileName, 'utf8')) as object;
   const cOpts: ConverterOptions = {
     verbose: Boolean(opts.verbose),
     deleteExampleWithId: Boolean(opts.deleteExamplesWithId),
