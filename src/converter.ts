@@ -515,9 +515,7 @@ to get the correct \`authorizationUrl\` and \`tokenUrl\`.`;
      */
     const simplifyRefObjectsInSchemas = (object: SchemaObject): SchemaObject => {
       return visitRefObjects(object, (node: RefObject): JsonNode => {
-        if ((Object.keys(node).length === 1) ||
-            (Object.keys(node).length === 2 && ('description' in node) || ('summary' in node)) ||
-            (Object.keys(node).length === 3 && ('description' in node) && ('summary' in node)) ) {
+        if (Object.keys(node).length == 1) { // a valid JSON reference object
            return node;
         }
         this.log(`Converting JSON Schema $ref ${this.json(node)} to allOf: [ $ref ]`);

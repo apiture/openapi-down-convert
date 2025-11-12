@@ -244,13 +244,36 @@ describe('resolver test suite', () => {
         }
       }
     };
+    const expected = {
+      "components": {
+        "schemas": {
+          "x": {
+            "title": "X",
+            "description": "X (schema)",
+            "type": "string",
+            "minLength": 0,
+            "maxLength": 16
+          },
+          "thing": {
+            "title": "Thing",
+            "description": "A thing",
+            "type": "object",
+            "properties": {
+              "x": {
+                "description": "x (property)",
+                "allOf": [
+                  { "$ref": "#/components/schemas/x"  }
+                ]
+              }
+            }
+          }
+        }
+      }
+    };
     const converter = new Converter(input, { allOfTransform: true, deleteExampleWithId: true });
     const converted: any = converter.convert();
     {
-      const x = converted.components.schemas.thing.properties.x;
-      expect(x.description).toBeDefined();
-      expect(x.description).toEqual('x (property)');
-      expect(x.$ref).toEqual('#/components/schemas/x');
+      expect(JSON.stringify(converted.components)).toEqual(JSON.stringify(expected.components));
     }
     done();
   });
