@@ -9,6 +9,8 @@
  * Represents a JSON Reference object, such as
  * `{"$ref": "#/components/schemas/problemResponse" }`
  */
+
+import { Converter } from './converter';
 export interface RefObject {
   $ref: string;
 }
@@ -43,6 +45,7 @@ export function isRef(node: object): boolean {
   return node !== null && typeof node === 'object' && node.hasOwnProperty('$ref') && typeof node['$ref'] === 'string';
 }
 
+
 /**
  * Walk a JSON object and apply `schemaCallback` when a JSON schema is found.
  * JSON Schema objects are items in components/schemas or in an item named `schema`
@@ -64,6 +67,10 @@ export function visitSchemaObjects(node: any, schemaCallback: SchemaVisitor): an
           const schema = schemas[schemaName];
           const newSchema = schemaCallback(schema);
           schemas[schemaName] = newSchema;
+          // Tag the schema as a schema $ref so other visitors can process it properly
+          if (typeof newSchema === 'object' && newSchema !== null) {
+            Converter.tagObjectAsSchemaRef(newSchema);
+          }
         }
       }
     }
