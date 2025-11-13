@@ -73,6 +73,24 @@ export class Converter {
   private returnCode = 0;
   private convertOpenIdConnectToOAuth2: boolean;
 
+  /** A tag used to temporarily mark schema $ref objects inside schema objects */
+  public static SCHEMA_REF_TAG = 'x-openapi-down-convert-schema-ref';
+
+  static tagObjectAsSchemaRef(schemaObj: object) {
+    (schemaObj as unknown)[Converter.SCHEMA_REF_TAG] = true;
+  }
+
+  static objectTaggedAsSchemaRef(schemaObj: object) {
+    return Converter.SCHEMA_REF_TAG in schemaObj;
+  }
+
+  static untagObjectAsSchemaRef(obj: object) : object {
+    if (Converter.SCHEMA_REF_TAG in obj) {
+      delete (obj as unknown)[Converter.SCHEMA_REF_TAG];
+    }
+    return obj;
+  }
+
   /**
    * Construct a new Converter
    * @throws Error if the scopeDescriptionFile (if specified) cannot be read or parsed as YAML/JSON
@@ -143,7 +161,6 @@ export class Converter {
     this.openapi30.openapi = '3.0.3';
     this.removeLicenseIdentifier();
     this.convertSchemaRef();
-    this.simplifyNonSchemaRef();
     if (this.convertOpenIdConnectToOAuth2) {
       this.convertOpenIdConnectSecuritySchemesToOAuth2();
     }
@@ -159,6 +176,14 @@ export class Converter {
     } else {
       this.deleteSchema$comment();
     }
+    // Note: simplifyNonSchemaRef must be performed after all
+    // the above schema transformations, since visiting
+    // all the schema $ref objects tags them with x-openapi-down-convert-schema-ref
+    // so simplifyNonSchemaRef can apply to any $ref that
+    // is not tagged x-openapi-down-convert-schema-ref
+    this.simplifyNonSchemaRef();
+    // remove the x-openapi-down-convert-schema-ref tags
+    this.untagSchemaRef();
     if (this.returnCode > 0) {
       throw new Error('Cannot down convert this OpenAPI definition.');
     }
@@ -199,6 +224,7 @@ export class Converter {
           }
         }
       }
+      Converter.tagObjectAsSchemaRef(schema);
       return schema;
     };
     visitSchemaObjects(this.openapi30, schemaVisitor);
@@ -439,12 +465,15 @@ to get the correct \`authorizationUrl\` and \`tokenUrl\`.`;
 
   /**
    * Find remaining OpenAPI 3.0 [Reference Objects](https://github.com/OAI/OpenAPI-Specification/blob/main/versions/3.1.0.md#referenceObject)
+   * that have not been tagged as schema $ref objects (these have been previously converted to allOf composites)
    * and down convert them to [JSON Reference](https://tools.ietf.org/html/draft-pbryan-zyp-json-ref-03) objects
    * with _only_ a `$ref` property.
    */
   simplifyNonSchemaRef() {
     visitRefObjects(this.openapi30, (node: RefObject): JsonNode => {
       if (Object.keys(node).length === 1) {
+        return node;
+      } else if (Converter.objectTaggedAsSchemaRef(node)) {
         return node;
       } else {
         this.log(`Down convert reference object to JSON Reference:\n${JSON.stringify(node, null, 3)}`);
@@ -456,6 +485,16 @@ to get the correct \`authorizationUrl\` and \`tokenUrl\`.`;
     });
   }
 
+  /**
+   * Remove the `x-openapi-down-convert-schema-ref` property added to schema $ref objects
+   * during visiting .
+   */
+  untagSchemaRef() {
+    return walkObject(this.openapi30, Converter.untagObjectAsSchemaRef);
+  }
+  /**
+   * Remove info.license.identifier property if it exists (not part of OAS 3.0)
+   */
   removeLicenseIdentifier() {
     if (this.openapi30?.['info']?.['license']?.['identifier']) {
       this.log(`Removed info.license.identifier: ${this.openapi30['info']['license']['identifier']}`);
@@ -476,14 +515,13 @@ to get the correct \`authorizationUrl\` and \`tokenUrl\`.`;
      */
     const simplifyRefObjectsInSchemas = (object: SchemaObject): SchemaObject => {
       return visitRefObjects(object, (node: RefObject): JsonNode => {
-        if (Object.keys(node).length === 1) {
-          return node;
-        } else {
-          this.log(`Converting JSON Schema $ref ${this.json(node)} to allOf: [ $ref ]`);
-          node['allOf'] = [{ $ref: node.$ref }];
-          delete node.$ref;
-          return node;
+        if (Object.keys(node).length == 1) { // a valid JSON reference object
+           return node;
         }
+        this.log(`Converting JSON Schema $ref ${this.json(node)} to allOf: [ $ref ]`);
+        node['allOf'] = [{ $ref: node.$ref }];
+        delete node.$ref;
+        return node;
       });
     };
 
