@@ -178,11 +178,11 @@ export class Converter {
     }
     // Note: simplifyNonSchemaRef must be performed after all
     // the above schema transformations, since visiting
-    // all the schema $ref objects tags them with x-apiture-schema-ref
+    // all the schema $ref objects tags them with x-openapi-down-convert-schema-ref
     // so simplifyNonSchemaRef can apply to any $ref that
-    // is not tagged x-apiture-schema-ref
+    // is not tagged x-openapi-down-convert-schema-ref
     this.simplifyNonSchemaRef();
-    // remove the x-apiture-schema-ref tags
+    // remove the x-openapi-down-convert-schema-ref tags
     this.untagSchemaRef();
     if (this.returnCode > 0) {
       throw new Error('Cannot down convert this OpenAPI definition.');
@@ -486,7 +486,7 @@ to get the correct \`authorizationUrl\` and \`tokenUrl\`.`;
   }
 
   /**
-   * Remove the `x-apiture-schema-ref` property added to schema $ref objects
+   * Remove the `x-openapi-down-convert-schema-ref` property added to schema $ref objects
    * during visiting .
    */
   untagSchemaRef() {
