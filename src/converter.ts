@@ -12,6 +12,7 @@ import {
   JsonNode,
   RefObject,
   SchemaObject,
+  isRef,
 } from './RefVisitor';
 
 /** Lightweight OAS document top-level fields */
@@ -169,6 +170,7 @@ export class Converter {
     this.convertJsonSchemaContentMediaType();
     this.convertConstToEnum();
     this.convertNullableTypeArray();
+    this.convertNullableOneOf();
     this.removeWebhooksObject();
     this.removeUnsupportedSchemaKeywords();
     if (this.convertSchemaComments) {
@@ -271,6 +273,93 @@ export class Converter {
           schema['type'] = nonNull;
           schema['nullable'] = true;
           this.log(`Converted schema type array to nullable`);
+        }
+      }
+      return this.walkNestedSchemaObjects(schema, schemaVisitor);
+    };
+    visitSchemaObjects(this.openapi30, schemaVisitor);
+  }
+
+  /**
+   * Finds the schema object from the components schemas.
+   *
+   * @param ref The $ref string value.
+   * @returns The schema object from the document.
+   */
+  findSchema(ref: string): SchemaObject {
+    const prefix = "#/components/schemas/";
+    const schemaName = ref.startsWith(prefix) && ref.slice(prefix.length);
+
+    if (schemaName) {
+      const components = this.openapi30?.components;
+      const schemas = components && components['schemas'];
+      if (schemas) {
+        return schemas[schemaName];
+      }
+    }
+  }
+
+  /**
+   * Finds the type of an SchemaObject, walking trough the references.
+   *
+   * @param node The node that we want to find the type of.
+   * @returns The deduced type for this node.
+   */
+  findSchemaObjectType(node: SchemaObject): string {
+    if (node.hasOwnProperty('type')) {
+      return node['type'];
+    } else if (node.hasOwnProperty('allOf') || node.hasOwnProperty('oneOf') || node.hasOwnProperty('anyOf')) {
+      const variants = node['allOf'] || node['anyOf'] || node['oneOf'];
+      const types: [string] = variants.map((variant: SchemaObject) => this.findSchemaObjectType(variant));
+      const uniqueTypes = [...new Set(types.filter((type) => type !== undefined))];
+      if (uniqueTypes.length === 1) {
+        return uniqueTypes[0];
+      }
+    } else if (isRef(node)) {
+      const ref = node['$ref'];
+      const resolvedSchema = this.findSchema(ref);
+      if (resolvedSchema) {
+        const type = this.findSchemaObjectType(resolvedSchema);
+        return type;
+      }
+    }
+  }
+
+  /**
+   * OpenAPI 3.1 has a common pattern where an `{ oneOf: [{ type: null }, { .. }]}`
+   * Is used to represent a nullable type.
+   *
+   * Up to this point the conversion would result in a `{ oneOf: [{ nullable: true }, { .. }]}` node.
+   * Since `nullable: true` must have a sibling `type` property,
+   * this function adds the type to the `nullable: true` field.
+   */
+  convertNullableOneOf() {
+    const schemaVisitor: SchemaVisitor = (schema: SchemaObject): SchemaObject => {
+      if (schema.hasOwnProperty('oneOf')) {
+        const oneOf = schema['oneOf'];
+        const nonTypeNull = oneOf.filter((variant: object) => {
+          const keys = Object.keys(variant);
+          return !(keys.length === 1 && keys.includes('type') && variant['type'] === 'null');
+        });
+
+        if (oneOf.length > nonTypeNull.length) {
+          const type = this.findSchemaObjectType({ oneOf: nonTypeNull });
+          // Nodes with type 'array' must have a sibling 'items' property.
+          // Thus, we'll inline the array type, if possible.
+          if (type === 'array' && nonTypeNull.length === 1) {
+            delete schema['oneOf'];
+            const arraySchema = isRef(nonTypeNull[0]) ? this.findSchema(nonTypeNull[0]['$ref']) : nonTypeNull[0];
+            for (const key of Object.keys(arraySchema)) {
+              schema[key] = arraySchema[key];
+            }
+            schema['nullable'] = true;
+          }
+          // Other node types work well with this approach.
+          else if (type) {
+            delete schema['oneOf'];
+            const allOf = [{ nullable: true, type }, { oneOf: nonTypeNull }];
+            schema['allOf'] = allOf;
+          }
         }
       }
       return this.walkNestedSchemaObjects(schema, schemaVisitor);

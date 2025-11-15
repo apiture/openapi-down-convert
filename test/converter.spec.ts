@@ -423,9 +423,9 @@ describe('resolver test suite', () => {
           a: {
             type: 'object',
             properties: {
-                  s: {
-                    type: 'string',
-                  },
+              s: {
+                type: 'string',
+              },
             },
             patternProperties: {
             "^[a-z{2}-[A-Z]{2,3}]$": {
@@ -541,24 +541,24 @@ describe('resolver test suite', () => {
   });
 
 
-   test('Remove webhooks object', (done) => {
+  test('Remove webhooks object', (done) => {
     const input = {
       openapi: '3.1.0',
-        webhooks: {
-          newThing: {
-            post: {
-              requestBody: {
-                description: 'Information about a new thing in the system',
-                content: {
-                  'application/json': {
-                    schema: {
+      webhooks: {
+        newThing: {
+          post: {
+            requestBody: {
+              description: 'Information about a new thing in the system',
+              content: {
+                'application/json': {
+                  schema: {
                       $ref: '#/components/schemas/newThing'
                     }
                   }
                 }
-              },
-              responses: {
-                200: {
+            },
+            responses: {
+              200: {
                   description: 'Return a 200 status to indicate that the data was received successfully'
                 }
               }
@@ -895,7 +895,7 @@ test('binary encoded data with existing binary format', (done) => {
   const converter = new Converter(input);
   let caught = false;
   try {
-      converter.convert();
+    converter.convert();
   } catch (e) {
     caught = true;
   }
@@ -1039,14 +1039,102 @@ test('contentMediaType with existing unexpected format', (done) => {
     },
   };
 
-   const converter = new Converter(input);
-   let caught = false;
-   try {
-     converter.convert();
-   } catch (e) {
-     caught = true;
-   }
-   expect(caught).toBeTruthy();
+  const converter = new Converter(input);
+  let caught = false;
+  try {
+    converter.convert();
+  } catch (e) {
+    caught = true;
+  }
+  expect(caught).toBeTruthy();
   // TODO how to check that Converter logged to console.warn ?
+  done();
+});
+
+test('converts nullable oneOf with an array', (done) => {
+  const input = {
+    openapi: '3.1.0',
+    components: {
+      schemas: {
+        ArrayItem: {
+          type: 'object',
+          properties: { text: { type: 'string' } },
+        },
+        ArrayType: {
+          type: 'array',
+          items: { $ref: '#/components/schemas/ArrayItem' },
+        },
+        NullableOneOfArray: {
+          oneOf: [{ type: 'null' }, { $ref: '#/components/schemas/ArrayType' }],
+        },
+      },
+    },
+  };
+
+  const expected = {
+    openapi: '3.0.3',
+    components: {
+      schemas: {
+        ArrayItem: {
+          type: 'object',
+          properties: { text: { type: 'string' } },
+        },
+        ArrayType: {
+          type: 'array',
+          items: { $ref: '#/components/schemas/ArrayItem' },
+        },
+        NullableOneOfArray: {
+          nullable: true,
+          type: 'array',
+          items: { $ref: '#/components/schemas/ArrayItem' },
+        },
+      },
+    },
+  };
+
+  const converter = new Converter(input);
+  const converted: any = converter.convert();
+
+  console.log(converted);
+  expect(converted).toEqual(expected);
+  done();
+});
+
+test('converts nullable oneOf with an object type', (done) => {
+  const input = {
+    openapi: '3.1.0',
+    components: {
+      schemas: {
+        Object: {
+          type: 'object',
+          properties: { text: { type: 'string' } },
+        },
+        NullableOneOfArray: {
+          oneOf: [{ type: 'null' }, { $ref: '#/components/schemas/Object' }],
+        },
+      },
+    },
+  };
+
+  const expected = {
+    openapi: '3.0.3',
+    components: {
+      schemas: {
+        Object: {
+          type: 'object',
+          properties: { text: { type: 'string' } },
+        },
+        NullableOneOfArray: {
+          allOf: [{ nullable: true, type: 'object' }, { oneOf: [{ $ref: '#/components/schemas/Object' }] }],
+        },
+      },
+    },
+  };
+
+  const converter = new Converter(input);
+  const converted: any = converter.convert();
+
+  console.log(converted);
+  expect(converted).toEqual(expected);
   done();
 });
