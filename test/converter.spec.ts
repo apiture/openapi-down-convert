@@ -414,7 +414,6 @@ describe('resolver test suite', () => {
     done();
   });
 
-
   test('Remove patternProperties keywords', (done) => {
     const input = {
       openapi: '3.1.0',
@@ -423,12 +422,12 @@ describe('resolver test suite', () => {
           a: {
             type: 'object',
             properties: {
-                  s: {
-                    type: 'string',
-                  },
+              s: {
+                type: 'string',
+              },
             },
             patternProperties: {
-            "^[a-z{2}-[A-Z]{2,3}]$": {
+              '^[a-z{2}-[A-Z]{2,3}]$': {
                 type: 'object',
                 unevaluatedProperties: false,
                 properties: {
@@ -511,7 +510,7 @@ describe('resolver test suite', () => {
               b: {
                 type: 'string',
                 contentMediaType: 'application/pdf',
-                maxLength: 5000000
+                maxLength: 5000000,
               },
             },
           },
@@ -527,7 +526,7 @@ describe('resolver test suite', () => {
             properties: {
               b: {
                 type: 'string',
-                maxLength: 5000000
+                maxLength: 5000000,
               },
             },
           },
@@ -540,35 +539,34 @@ describe('resolver test suite', () => {
     done();
   });
 
-
-   test('Remove webhooks object', (done) => {
+  test('Remove webhooks object', (done) => {
     const input = {
       openapi: '3.1.0',
-        webhooks: {
-          newThing: {
-            post: {
-              requestBody: {
-                description: 'Information about a new thing in the system',
-                content: {
-                  'application/json': {
-                    schema: {
-                      $ref: '#/components/schemas/newThing'
-                    }
-                  }
-                }
+      webhooks: {
+        newThing: {
+          post: {
+            requestBody: {
+              description: 'Information about a new thing in the system',
+              content: {
+                'application/json': {
+                  schema: {
+                    $ref: '#/components/schemas/newThing',
+                  },
+                },
               },
-              responses: {
-                200: {
-                  description: 'Return a 200 status to indicate that the data was received successfully'
-                }
-              }
-            }
-          }
-        }
+            },
+            responses: {
+              200: {
+                description: 'Return a 200 status to indicate that the data was received successfully',
+              },
+            },
+          },
+        },
+      },
     };
 
     const expected = {
-      openapi: '3.0.3'
+      openapi: '3.0.3',
     };
 
     const converter = new Converter(input, { verbose: true });
@@ -737,6 +735,268 @@ describe('resolver test suite', () => {
     done();
   });
 
+  test('Convert anyOf with null type', (done) => {
+    const input = {
+      components: {
+        schemas: {
+          a: {
+            anyOf: [
+              {
+                $ref: '#/components/schemas/b',
+              },
+              {
+                type: 'null',
+              },
+            ],
+          },
+          b: {
+            type: 'string',
+          },
+        },
+      },
+    };
+    const expected = {
+      openapi: '3.0.3',
+      components: {
+        schemas: {
+          a: {
+            allOf: [
+              {
+                $ref: '#/components/schemas/b',
+              },
+            ],
+            nullable: true,
+          },
+          b: {
+            type: 'string',
+          },
+        },
+      },
+    };
+
+    const converter = new Converter(input, { verbose: true });
+    const converted: any = converter.convert();
+    expect(converted).toEqual(expected);
+    done();
+  });
+
+  test('Convert oneOf with null type', (done) => {
+    const input = {
+      components: {
+        schemas: {
+          a: {
+            oneOf: [
+              {
+                $ref: '#/components/schemas/b',
+              },
+              {
+                $ref: '#/components/schemas/c',
+              },
+              {
+                type: 'null',
+              },
+            ],
+          },
+          b: {
+            type: 'string',
+          },
+          c: {
+            type: 'string',
+          },
+        },
+      },
+    };
+    const expected = {
+      openapi: '3.0.3',
+      components: {
+        schemas: {
+          a: {
+            oneOf: [
+              {
+                $ref: '#/components/schemas/b',
+              },
+              {
+                $ref: '#/components/schemas/c',
+              },
+            ],
+            nullable: true,
+          },
+          b: {
+            type: 'string',
+          },
+          c: {
+            type: 'string',
+          },
+        },
+      },
+    };
+
+    const converter = new Converter(input, { verbose: true });
+    const converted: any = converter.convert();
+    expect(converted).toEqual(expected);
+    done();
+  });
+
+  test('Convert oneOf with ref nullable type array', (done) => {
+    const input = {
+      components: {
+        schemas: {
+          a: {
+            oneOf: [
+              {
+                $ref: '#/components/schemas/b',
+              },
+              {
+                $ref: '#/components/schemas/c',
+              },
+            ],
+          },
+          b: {
+            type: ['number', 'null'],
+          },
+          c: {
+            type: 'string',
+          },
+        },
+      },
+    };
+    const expected = {
+      openapi: '3.0.3',
+      components: {
+        schemas: {
+          a: {
+            nullable: true,
+            oneOf: [
+              {
+                $ref: '#/components/schemas/b',
+              },
+              {
+                $ref: '#/components/schemas/c',
+              },
+            ],
+          },
+          b: {
+            type: 'number',
+            nullable: true,
+          },
+          c: {
+            type: 'string',
+          },
+        },
+      },
+    };
+
+    const converter = new Converter(input, { verbose: true });
+    const converted: any = converter.convert();
+    expect(converted).toEqual(expected);
+    done();
+  });
+
+  test('Convert oneOf with deep null type', (done) => {
+    const input = {
+      components: {
+        schemas: {
+          a: {
+            oneOf: [
+              {
+                $ref: '#/components/schemas/b',
+              },
+              {
+                $ref: '#/components/schemas/c',
+              },
+            ],
+          },
+          b: {
+            anyOf: [ {$ref: "#/components/schemas/d"}, { type: 'string'}],
+          },
+          c: {
+            type: 'string',
+          },
+          d: {
+            oneOf: [
+              { type: 'null' },
+              { type: 'number' }
+            ]
+          }
+        },
+      },
+    };
+    const expected = {
+      openapi: '3.0.3',
+      components: {
+        schemas: {
+          a: {
+            nullable: true,
+            oneOf: [
+              {
+                $ref: '#/components/schemas/b',
+              },
+              {
+                $ref: '#/components/schemas/c',
+              },
+            ],
+          },
+          b: {
+            anyOf: [ {$ref: "#/components/schemas/d"}, { type: 'string'}],
+            nullable: true,
+          },
+          c: {
+            type: 'string',
+          },
+          d: {
+            nullable: true,
+            allOf: [
+              { type: 'number' }
+            ]
+          }
+        },
+      },
+    };
+
+    const converter = new Converter(input, { verbose: true });
+    const converted: any = converter.convert();
+    expect(converted).toEqual(expected);
+    done();
+  });
+
+  test('Convert recursive schema', (done) => {
+    const input = {
+      components: {
+        schemas: {
+          a: {
+            anyOf: [ { $ref: "#/components/schemas/b" }, { $ref: "#/components/schemas/c" } ],
+          },
+          b: {
+            anyOf: [ { $ref: "#/components/schemas/a" }, { $ref: "#/components/schemas/c" } ]
+          },
+          c: {
+            type: "string",
+          },
+        },
+      },
+    };
+    const expected = {
+      openapi: '3.0.3',
+      components: {
+        schemas: {
+          a: {
+            anyOf: [ { $ref: "#/components/schemas/b" }, { $ref: "#/components/schemas/c" } ],
+          },
+          b: {
+            anyOf: [ { $ref: "#/components/schemas/a" }, { $ref: "#/components/schemas/c" } ]
+          },
+          c: {
+            type: "string",
+          },
+        },
+      },
+    };
+    const converter = new Converter(input, { verbose: true });
+    const converted: any = converter.convert();
+    expect(converted).toEqual(expected);
+    done();
+  });
+
   test('Convert const to enum', (done) => {
     const input = {
       components: {
@@ -895,11 +1155,11 @@ test('binary encoded data with existing binary format', (done) => {
   const converter = new Converter(input);
   let caught = false;
   try {
-      converter.convert();
+    converter.convert();
   } catch (e) {
     caught = true;
   }
-  expect(caught).toBeTruthy()
+  expect(caught).toBeTruthy();
   // TODO how to check that Converter logged a specific note?
   done();
 });
@@ -971,7 +1231,7 @@ test('contentMediaType with existing binary format', (done) => {
         binaryEncodedDataWithExistingBinaryFormat: {
           type: 'string',
           contentMediaType: 'application/octet-stream',
-          format: 'binary'
+          format: 'binary',
         },
       },
     },
@@ -993,7 +1253,6 @@ test('contentMediaType with existing binary format', (done) => {
   // TODO how to check that Converter logged to console.warn ?
   done();
 });
-
 
 test('contentMediaType with no existing format', (done) => {
   const input = {
@@ -1033,20 +1292,20 @@ test('contentMediaType with existing unexpected format', (done) => {
         binaryEncodedDataWithExistingBinaryFormat: {
           type: 'string',
           contentMediaType: 'application/octet-stream',
-          format: 'byte'
+          format: 'byte',
         },
       },
     },
   };
 
-   const converter = new Converter(input);
-   let caught = false;
-   try {
-     converter.convert();
-   } catch (e) {
-     caught = true;
-   }
-   expect(caught).toBeTruthy();
+  const converter = new Converter(input);
+  let caught = false;
+  try {
+    converter.convert();
+  } catch (e) {
+    caught = true;
+  }
+  expect(caught).toBeTruthy();
   // TODO how to check that Converter logged to console.warn ?
   done();
 });
